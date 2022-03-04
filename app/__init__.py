@@ -23,6 +23,7 @@ from flask_sqlalchemy import SQLAlchemy
 # define the flask application and load the configuration
 app = Flask(__name__)
 app.config.from_object(Config)
+
 db = SQLAlchemy(app)
 
 
