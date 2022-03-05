@@ -26,3 +26,6 @@ class Config:
     # SQLite database
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, "dude.sqlite")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # application semantic version
+    VERSION = "1.0.0"
