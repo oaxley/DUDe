@@ -21,7 +21,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 #----- Class
 class Config:
     # the API-KEY used for the administrator section
-    DUDE_SECRET_KEY = os.environ.get("DUDE_SECRET_KEY") or uuid.uuid4()
+    DUDE_SECRET_KEY = os.environ.get("DUDE_SECRET_KEY") or str(uuid.uuid4())
 
     # SQLite database
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, "dude.sqlite")

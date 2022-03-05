@@ -12,15 +12,24 @@
 # @brief	Routes definition for Dude project
 
 #----- Imports
-from app import app
+from __future__ import annotations
+from typing import Any, List
+
+from flask import jsonify, request, abort
+from app import app, db
 
 
-#----- Globals
 
-
-#----- Functions
-
+#
+#----- Generic routes
+#
 # main route
 @app.route('/')
 def index():
-    return "Hello, World!"
+    return f"Dummy User Directory (DUDe) - {app.config['VERSION']}"
+
+# return the version information
+@app.route('/version')
+def version():
+    return jsonify({'version': app.config['VERSION']})
+
