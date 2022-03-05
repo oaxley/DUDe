@@ -51,10 +51,10 @@ def orga_create():
 
     # try to add this organization to the DB
     try:
-        u = Organization(name = data['name'])
-        db.session.add(u)
+        orga = Organization(name = data['name'])
+        db.session.add(orga)
         db.session.commit()
-        return (jsonify({"id": u.id}), 201)
+        return (jsonify({"id": orga.id}), 201)
     except:
         abort(409, "Resource already present")
 
