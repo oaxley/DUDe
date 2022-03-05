@@ -18,11 +18,13 @@ from typing import Any, List
 from flask import jsonify, request, abort
 from app import app, db
 
+from .models import Organization
 
 
 #
 #----- Generic routes
 #
+
 # main route
 @app.route('/')
 def index():
@@ -33,3 +35,25 @@ def index():
 def version():
     return jsonify({'version': app.config['VERSION']})
 
+
+#
+#----- Organization routes
+#
+
+# add a new organization
+@app.route('/orga', methods=['POST'])
+def orga_create():
+    data = request.get_json()
+
+    # check the admin user key
+    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
+        abort(403)
+
+    # try to add this organization to the DB
+    try:
+        u = Organization(name = data['name'])
+        db.session.add(u)
+        db.session.commit()
+        return ("", 201)
+    except:
+        abort(409, "Resource already present")
