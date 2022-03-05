@@ -13,6 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
+from crypt import methods
 from typing import Any, List
 
 from flask import jsonify, request, abort
@@ -58,3 +59,36 @@ def orga_create():
     except:
         abort(409, "Resource already present")
 
+# modify an organization
+@app.route('/orga/<int:orga_id>', methods=['PUT'])
+def orga_update(orga_id):
+    data = request.get_json()
+
+    # check the admin user key
+    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
+        abort(403)
+
+    # try to get the record
+    results: List[Organization] = Organization.query.filter_by(id=orga_id).all()
+    if len(results) == 0:
+        abort(404)
+
+    # retrieve previous organization parameters
+    orga: Organization = results[0]
+    old_name = orga.name
+
+    if ('name' not in data) or (data['name'] == old_name):
+        abort(400)
+
+    # change the name with the new data
+    try:
+        orga.name = data['name']
+        db.session.add(orga)
+        db.session.commit()
+
+        return (jsonify({
+            'name': old_name
+        }), 200)
+
+    except:
+        abort(404)
