@@ -54,6 +54,7 @@ def orga_create():
         u = Organization(name = data['name'])
         db.session.add(u)
         db.session.commit()
-        return ("", 201)
+        return (jsonify({"id": u.id}), 201)
     except:
         abort(409, "Resource already present")
+
