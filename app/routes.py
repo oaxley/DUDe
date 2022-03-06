@@ -19,7 +19,9 @@ from typing import Any, List
 from flask import jsonify, request, abort
 from app import app, db
 
-from .models import Organization
+from .models import (
+    Organization, Department
+)
 
 
 #
@@ -92,3 +94,33 @@ def orga_update(orga_id):
 
     except:
         abort(404)
+
+#
+#----- Department routes
+#
+
+# add a new department
+@app.route('/dept', methods=['POST'])
+def dept_create():
+    data = request.get_json() or {}
+
+    # check the admin user key
+    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
+        abort(403)
+
+    # try to retrieve the organization
+    if 'orga_id' not in data:
+        abort(400)
+
+    results: List[Organization] = Organization.query.filter_by(id=data['orga_id']).all()
+    if len(results) == 0:
+        abort(404)
+
+    # try to add this department to the DB
+    try:
+        dept = Department(name = data['name'], org_id=data['orga_id'])
+        db.session.add(dept)
+        db.session.commit()
+        return (jsonify({"id": dept.id}), 201)
+    except:
+        abort(409, "Resource already present")
