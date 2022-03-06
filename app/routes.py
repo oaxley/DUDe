@@ -44,7 +44,7 @@ def version():
 # add a new organization
 @app.route('/orga', methods=['POST'])
 def orga_create():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     # check the admin user key
     if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
@@ -62,7 +62,7 @@ def orga_create():
 # modify an organization
 @app.route('/orga/<int:orga_id>', methods=['PUT'])
 def orga_update(orga_id):
-    data = request.get_json()
+    data = request.get_json() or {}
 
     # check the admin user key
     if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
