@@ -14,7 +14,7 @@
 #----- Imports
 from __future__ import annotations
 from crypt import methods
-from typing import Any, List
+from typing import Any, List, Optional
 
 from flask import jsonify, request, abort
 from app import app, db
@@ -71,8 +71,8 @@ def orga_update(orga_id):
         abort(403)
 
     # try to get the record
-    results: List[Organization] = Organization.query.filter_by(id=orga_id).all()
-    if len(results) == 0:
+    orga: Optional[Organization] = Organization.query.filter_by(id=orga_id).first()
+    if orga is None:
         abort(404)
 
     # retrieve previous organization parameters
@@ -112,13 +112,13 @@ def dept_create():
     if 'orga_id' not in data:
         abort(400)
 
-    results: List[Organization] = Organization.query.filter_by(id=data['orga_id']).all()
-    if len(results) == 0:
+    orga: Optional[Organization] = Organization.query.filter_by(id=data['orga_id']).first()
+    if orga is None:
         abort(404)
 
     # try to add this department to the DB
     try:
-        dept = Department(name = data['name'], org_id=data['orga_id'])
+        dept = Department(name = data['name'], org_id=orga.id)
         db.session.add(dept)
         db.session.commit()
         return (jsonify({"id": dept.id}), 201)
