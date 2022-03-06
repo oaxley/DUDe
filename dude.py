@@ -24,7 +24,10 @@ logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level=loggin
 #----- Begin
 # import the application & database
 from app import app, db
-from app.models import Organization, Department
+from app.models import (
+    Organization, Department, Unit,
+    User, Right, Application, UserRight
+)
 
 # create the database if it does not exist
 db.create_all()
@@ -33,4 +36,13 @@ db.create_all()
 # shell context (to be removed)
 @app.shell_context_processor
 def make_context():
-    return {'db': db, 'Orga': Organization, 'Dept': Department}
+    return {
+        'db': db,
+        'Orga': Organization,
+        'Dept': Department,
+        'Unit': Unit,
+        'User': User,
+        'Right': Right,
+        'App': Application,
+        'UsrRT': UserRight
+    }
