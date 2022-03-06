@@ -55,3 +55,37 @@ def unit_create():
 
     except sqlalchemy.exc.IntegrityError:
         abort(409, "Integrity Error")
+
+@blueprint.route('/unit/<int:unit_id>', methods=['PUT'])
+@authenticate
+def unit_update(unit_id):
+    """Update a Unit"""
+    data = request.get_json() or {}
+
+    unit: Optional[Unit] = Unit.query.filter_by(id=unit_id).first()
+    if unit is None:
+        abort(404, "Could not find Unit.")
+
+    # change the name of this Unit
+    if 'name' in data:
+        unit.name = data['name']
+
+    # change the department for this Unit
+    if 'dept_id' in data:
+        dept: Optional[Department] = Department.query.filter_by(id=data['dept_id']).first()
+        if dept is None:
+            abort(404, "Could not find Department.")
+
+        unit.dept_id = dept.id
+
+    # commit the changes to the database
+    try:
+        db.session.add(unit)
+        db.session.commit()
+    except sqlalchemy.exc.IntegrityError:
+        abort(400, "Error: IntegrityError raised during database commit.")
+
+    return (jsonify({
+        "name": unit.name,
+        "dept_id": unit.dept_id
+    }), 200)
