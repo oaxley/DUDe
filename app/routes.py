@@ -76,7 +76,6 @@ def orga_update(orga_id):
         abort(404)
 
     # retrieve previous organization parameters
-    orga: Organization = results[0]
     old_name = orga.name
 
     if ('name' not in data) or (data['name'] == old_name):
@@ -124,3 +123,57 @@ def dept_create():
         return (jsonify({"id": dept.id}), 201)
     except:
         abort(409, "Resource already present")
+
+# update a department
+@app.route('/dept/<int:dept_id>', methods=['PUT'])
+def dept_update(dept_id):
+    data = request.get_json() or {}
+
+    # check the admin user key
+    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
+        abort(403)
+
+    # retrieve the deparment
+    dept: Optional[Department] = Department.query.filter_by(id=dept_id).first()
+    if dept is None:
+        abort(404)
+
+    # change the name of the department
+    if 'name' in data:
+        try:
+            old_name = dept.name
+            dept.name = data['name']
+
+            db.session.add(dept)
+            db.session.commit()
+            return (jsonify(
+                {
+                    'old_name': old_name,
+                    'new_name': dept.name
+                }
+            ), 200)
+        except:
+            abort(400)
+
+    # change the department organization
+    if 'orga_id' in data:
+        try:
+            orga: Optional[Organization] = Organization.query.filter_by(id=data['orga_id']).first()
+            if orga is None:
+                abort(404)
+
+            old_orga = dept.org_id
+            dept.org_id = orga.id
+
+            db.session.add(dept)
+            db.session.commit()
+            return (jsonify(
+                {
+                    'old_orga_id': old_orga,
+                    'new_orga_id': dept.org_id
+                }
+            ), 200)
+        except:
+            abort(400)
+
+    abort(400)
