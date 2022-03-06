@@ -24,11 +24,13 @@ from .models import (
 
 from .endpoints.orga import blueprint as OrganizationBP
 from .endpoints.dept import blueprint as DepartmentBP
+from .endpoints.unit import blueprint as UnitBP
 
 
 #----- Globals
 app.register_blueprint(OrganizationBP)
 app.register_blueprint(DepartmentBP)
+app.register_blueprint(UnitBP)
 
 
 #
