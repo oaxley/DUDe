@@ -22,6 +22,8 @@ from app.models import (
     Organization, Department
 )
 
+from app.helpers import authenticate
+
 
 #----- Globals
 blueprint = Blueprint('department', __name__)
@@ -30,12 +32,9 @@ blueprint = Blueprint('department', __name__)
 #----- Functions
 # add a new department
 @blueprint.route('/dept', methods=['POST'])
+@authenticate
 def dept_create():
     data = request.get_json() or {}
-
-    # check the admin user key
-    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
-        abort(403)
 
     # try to retrieve the organization
     if 'orga_id' not in data:
@@ -56,12 +55,9 @@ def dept_create():
 
 # update a department
 @blueprint.route('/dept/<int:dept_id>', methods=['PUT'])
+@authenticate
 def dept_update(dept_id):
     data = request.get_json() or {}
-
-    # check the admin user key
-    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
-        abort(403)
 
     # retrieve the deparment
     dept: Optional[Department] = Department.query.filter_by(id=dept_id).first()

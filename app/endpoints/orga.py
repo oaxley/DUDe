@@ -19,6 +19,7 @@ from flask import Blueprint, jsonify, request, abort
 from app import app, db
 
 from app.models import Organization
+from app.helpers import authenticate
 
 
 #----- Globals
@@ -28,12 +29,9 @@ blueprint = Blueprint('organization', __name__)
 #----- Functions
 # add a new organization
 @blueprint.route('/orga', methods=['POST'])
+@authenticate
 def orga_create():
     data = request.get_json() or {}
-
-    # check the admin user key
-    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
-        abort(403)
 
     # try to add this organization to the DB
     try:
@@ -46,12 +44,9 @@ def orga_create():
 
 # modify an organization
 @blueprint.route('/orga/<int:orga_id>', methods=['PUT'])
+@authenticate
 def orga_update(orga_id):
     data = request.get_json() or {}
-
-    # check the admin user key
-    if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
-        abort(403)
 
     # try to get the record
     orga: Optional[Organization] = Organization.query.filter_by(id=orga_id).first()

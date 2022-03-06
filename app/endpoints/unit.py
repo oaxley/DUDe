@@ -25,6 +25,7 @@ from app.models import (
 
 from app.helpers import authenticate
 
+
 #----- Globals
 blueprint = Blueprint('unit', __name__)
 
@@ -34,10 +35,6 @@ blueprint = Blueprint('unit', __name__)
 @authenticate
 def unit_create():
     data = request.get_json() or {}
-
-    # check the admin user key
-    # if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
-    #     abort(403)
 
     # try to retrieve the department
     if 'dept_id' not in data:
