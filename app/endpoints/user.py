@@ -15,8 +15,6 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from uuid import uuid4
-
 from flask_sqlalchemy import sqlalchemy
 from flask import Blueprint, jsonify, request, abort
 from app import app, db
