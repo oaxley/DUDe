@@ -26,12 +26,15 @@ from .endpoints.orga import blueprint as OrganizationBP
 from .endpoints.dept import blueprint as DepartmentBP
 from .endpoints.unit import blueprint as UnitBP
 from .endpoints.application import blueprint as ApplicationBP
+from .endpoints.user import blueprint as UserBP
 
 #----- Globals
 app.register_blueprint(OrganizationBP)
 app.register_blueprint(DepartmentBP)
 app.register_blueprint(UnitBP)
 app.register_blueprint(ApplicationBP)
+app.register_blueprint(UserBP)
+
 
 #
 #----- Generic routes
