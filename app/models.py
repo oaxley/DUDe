@@ -50,24 +50,24 @@ class Application(db.Model):
     apikey = db.Column(db.String(128), nullable=False, unique=True)
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
 
-    rights = db.relationship('Right', backref='application', lazy='dynamic')
-
 class User(db.Model):
     """A user belongs to a unit"""
     # __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, nullable=False, unique=True)
+    name = db.Column(db.String(128), index=True, nullable=False)
+    email = db.Column(db.String(255), index=True, nullable=False, unique=True)
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
 
 class Right(db.Model):
     """A right is an abstract object attached to an application"""
     # __tablename__ = "right"
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, nullable=False, unique=True)
-    app_id = db.Column(db.Integer, db.ForeignKey('application.id'))
+    name = db.Column(db.String(128), index=True, nullable=False)
+    unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
 
 class UserRight(db.Model):
     """Associate a user with a specific right"""
+    # __tablename__ = "user_right"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     right_id = db.Column(db.Integer, db.ForeignKey('right.id'))
