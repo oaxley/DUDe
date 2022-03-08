@@ -15,59 +15,45 @@
 from app import db
 
 #----- Classes
-class Organization(db.Model):
-    """An organization is the main entity where a person belongs to"""
-    # __tablename__ = "organization"
+class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False, unique=True)
-
-    departments = db.relationship('Department', backref='organization', lazy='dynamic')
-
-class Department(db.Model):
-    """A department is an entity within an organization"""
-    # __tablename__ = "department"
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, nullable=False, unique=True)
-    org_id = db.Column(db.Integer, db.ForeignKey('organization.id'))
-
-    units = db.relationship('Unit', backref='department', lazy='dynamic')
+    units = db.relationship('Unit', backref='company', lazy='dynamic')
 
 class Unit(db.Model):
-    """Departments are subdivised in unit"""
-    # __tablename__ = "unit"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False, unique=True)
-    dept_id = db.Column(db.Integer, db.ForeignKey('department.id'))
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
+    teams = db.relationship('Team', backref='unit', lazy='dynamic')
 
-    applications = db.relationship('Application', backref='unit', lazy='dynamic')
-    users = db.relationship('User', backref='unit', lazy='dynamic')
-
-class Application(db.Model):
-    """An application belongs to a department unit"""
-    # __tablename__ = "application"
+class Team(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False, unique=True)
-    apikey = db.Column(db.String(128), nullable=False, unique=True)
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
 
+    users = db.relationship('User', backref='team', lazy='dynamic')
+    rights = db.relationship('Right', backref='team', lazy='dynamic')
+    software = db.relationship('Software', backref='team', lazy='dynamic')
+
 class User(db.Model):
-    """A user belongs to a unit"""
-    # __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False)
     email = db.Column(db.String(255), index=True, nullable=False, unique=True)
-    unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'))
 
 class Right(db.Model):
-    """A right is an abstract object attached to an application"""
-    # __tablename__ = "right"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False)
-    unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'))
+
+class Software(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), index=True, nullable=False)
+    apikey = db.Column(db.String(128), nullable=False, unique=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'))
+
 
 class UserRight(db.Model):
-    """Associate a user with a specific right"""
-    # __tablename__ = "user_right"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     right_id = db.Column(db.Integer, db.ForeignKey('right.id'))
