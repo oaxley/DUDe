@@ -27,6 +27,8 @@ from .endpoints.dept import blueprint as DepartmentBP
 from .endpoints.unit import blueprint as UnitBP
 from .endpoints.application import blueprint as ApplicationBP
 from .endpoints.user import blueprint as UserBP
+from .endpoints.right import blueprint as RightBP
+
 
 #----- Globals
 app.register_blueprint(OrganizationBP)
@@ -34,6 +36,7 @@ app.register_blueprint(DepartmentBP)
 app.register_blueprint(UnitBP)
 app.register_blueprint(ApplicationBP)
 app.register_blueprint(UserBP)
+app.register_blueprint(RightBP)
 
 
 #
