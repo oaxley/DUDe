@@ -26,7 +26,7 @@ from app.helpers import authenticate
 
 
 #----- Globals
-blueprint = Blueprint('organization', __name__, url_prefix="/companies")
+blueprint = Blueprint('company', __name__, url_prefix="/companies")
 
 
 #----- Functions
