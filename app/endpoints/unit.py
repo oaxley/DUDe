@@ -9,7 +9,7 @@
 # @author	Sebastien LEGRAND
 # @license	Apache License 2.0
 #
-# @brief	Flask route for the "companies" endpoint
+# @brief	Flask route for the "units" endpoint
 
 #----- Imports
 from __future__ import annotations
