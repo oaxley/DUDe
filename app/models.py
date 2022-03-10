@@ -22,13 +22,13 @@ class Company(db.Model):
 
 class Unit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, nullable=False, unique=True)
+    name = db.Column(db.String(128), index=True, nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
     teams = db.relationship('Team', backref='unit', lazy='dynamic')
 
 class Team(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), index=True, nullable=False, unique=True)
+    name = db.Column(db.String(128), index=True, nullable=False)
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
 
     users = db.relationship('User', backref='team', lazy='dynamic')
