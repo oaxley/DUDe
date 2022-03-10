@@ -74,3 +74,46 @@ def delete_unit():
     """
 
 
+#
+# routes for a single user
+#
+@blueprint.route("/<int:user_id>", methods=["POST"])
+@authenticate
+def post_single_user(user_id):
+    """This endpoint has no meaning
+
+    Returns:
+        405 Method not allowed
+    """
+
+@blueprint.route("/<int:user_id>", methods=["GET"])
+def get_single_user(user_id):
+    """Retrieve details for a user
+
+    Returns:
+        200 OK
+        404 Not found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:user_id>", methods=["PUT"])
+@authenticate
+def put_single_user(user_id):
+    """Update details for a user
+
+    Returns:
+        204 No Content
+        404 Not Found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:user_id>", methods=["DELETE"])
+@authenticate
+def delete_single_user(user_id):
+    """Delete a user
+
+    Returns:
+        204 No content
+        404 Not found
+        500 Internal Server Error
+    """
