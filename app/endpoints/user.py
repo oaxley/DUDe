@@ -32,7 +32,7 @@ blueprint = Blueprint('user', __name__, url_prefix="/users")
 #
 @blueprint.route("/", methods=["POST"])
 @authenticate
-def post_unit():
+def post_user():
     """Create a new user
 
     Returns:
@@ -43,7 +43,7 @@ def post_unit():
 
 @blueprint.route("/", methods=["GET"])
 @authenticate
-def get_unit():
+def get_user():
     """Get all the users
 
     Returns:
@@ -54,7 +54,7 @@ def get_unit():
 
 @blueprint.route("/", methods=["PUT"])
 @authenticate
-def put_unit():
+def put_user():
     """Update all the users - Not Implemented
 
     Returns:
@@ -64,7 +64,7 @@ def put_unit():
 
 @blueprint.route("/", methods=["DELETE"])
 @authenticate
-def delete_unit():
+def delete_user():
     """Delete all the users
 
     Returns:
@@ -123,7 +123,7 @@ def delete_single_user(user_id):
 #
 @blueprint.route("/<int:user_id>/rights", methods=["POST"])
 @authenticate
-def post_single_unit_rights(user_id):
+def post_single_user_rights(user_id):
     """Creata a new right and associate it with the user
 
     Returns:
@@ -135,7 +135,7 @@ def post_single_unit_rights(user_id):
 
 @blueprint.route("/<int:user_id>/rights", methods=["GET"])
 @authenticate
-def get_single_unit_rights(user_id):
+def get_single_user_rights(user_id):
     """Retrieve all rights for a user
 
     Returns:
@@ -146,7 +146,7 @@ def get_single_unit_rights(user_id):
 
 @blueprint.route("/<int:user_id>/rights", methods=["PUT"])
 @authenticate
-def put_single_unit_rights(user_id):
+def put_single_user_rights(user_id):
     """Update all rights for a user
 
     Returns:
@@ -157,7 +157,7 @@ def put_single_unit_rights(user_id):
 
 @blueprint.route("/<int:user_id>/rights", methods=["DELETE"])
 @authenticate
-def delete_single_unit_rights(user_id):
+def delete_single_user_rights(user_id):
     """Delete all rights for a user
 
     Returns:
