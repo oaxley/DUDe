@@ -74,3 +74,46 @@ def delete_team():
     """
 
 
+#
+# routes for a single team
+#
+@blueprint.route("/<int:team_id>", methods=["POST"])
+@authenticate
+def post_single_team(team_id):
+    """This endpoint has no meaning
+
+    Returns:
+        405 Method not allowed
+    """
+
+@blueprint.route("/<int:team_id>", methods=["GET"])
+def get_single_team(team_id):
+    """Retrieve details for a team
+
+    Returns:
+        200 OK
+        404 Not found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>", methods=["PUT"])
+@authenticate
+def put_single_team(team_id):
+    """Update details for a team
+
+    Returns:
+        204 No Content
+        404 Not Found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>", methods=["DELETE"])
+@authenticate
+def delete_single_team(team_id):
+    """Delete a team
+
+    Returns:
+        204 No content
+        404 Not found
+        500 Internal Server Error
+    """
