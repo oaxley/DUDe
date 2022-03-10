@@ -213,3 +213,51 @@ def delete_single_team_rights(team_id):
         404 Not found
         500 Internal Server Error
     """
+
+#
+# routes for software
+#
+@blueprint.route("/<int:team_id>/software", methods=["POST"])
+@authenticate
+def post_single_team_software(team_id):
+    """Create a new software and associate it with the team
+
+    Returns:
+        201 + Location of the new user
+        400 Bad Request
+        404 Not found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>/software", methods=["GET"])
+@authenticate
+def get_single_team_software(team_id):
+    """Retrieve all software for a team
+
+    Returns:
+        200 OK
+        404 Not found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>/software", methods=["PUT"])
+@authenticate
+def put_single_team_software(team_id):
+    """Update all software for a team
+
+    Returns:
+        204 No Content
+        404 Not Found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>/software", methods=["DELETE"])
+@authenticate
+def delete_single_team_software(team_id):
+    """Delete all software for a team
+
+    Returns:
+        204 No content
+        404 Not found
+        500 Internal Server Error
+    """
