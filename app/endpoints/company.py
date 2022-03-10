@@ -1,6 +1,3 @@
-from socket import herror
-
-
 # -*- coding: utf-8 -*-
 # vim: set ft=python
 #
