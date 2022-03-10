@@ -16,27 +16,19 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 from flask import jsonify, request, abort
-from app import app, db
+from app import app
 
-from .models import (
-    Organization, Department
-)
-
-from .endpoints.orga import blueprint as OrganizationBP
-from .endpoints.dept import blueprint as DepartmentBP
-from .endpoints.unit import blueprint as UnitBP
-from .endpoints.application import blueprint as ApplicationBP
-from .endpoints.user import blueprint as UserBP
-from .endpoints.right import blueprint as RightBP
+from . import endpoints
 
 
 #----- Globals
-app.register_blueprint(OrganizationBP)
-app.register_blueprint(DepartmentBP)
-app.register_blueprint(UnitBP)
-app.register_blueprint(ApplicationBP)
-app.register_blueprint(UserBP)
-app.register_blueprint(RightBP)
+# register all the endpoint
+app.register_blueprint(endpoints.BPCompany)
+app.register_blueprint(endpoints.BPUnit)
+app.register_blueprint(endpoints.BPTeam)
+app.register_blueprint(endpoints.BPUser)
+app.register_blueprint(endpoints.BPRight)
+app.register_blueprint(endpoints.BPSoftware)
 
 
 #
