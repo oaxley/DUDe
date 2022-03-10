@@ -117,3 +117,51 @@ def delete_single_team(team_id):
         404 Not found
         500 Internal Server Error
     """
+
+#
+# routes for users
+#
+@blueprint.route("/<int:team_id>/users", methods=["POST"])
+@authenticate
+def post_single_team_users(team_id):
+    """Create a new user and associate it with the team
+
+    Returns:
+        201 + Location of the new user
+        400 Bad Request
+        404 Not found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>/users", methods=["GET"])
+@authenticate
+def get_single_team_users(team_id):
+    """Retrieve all users for a team
+
+    Returns:
+        200 OK
+        404 Not found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>/users", methods=["PUT"])
+@authenticate
+def put_single_team_users(team_id):
+    """Update all users for a team
+
+    Returns:
+        204 No Content
+        404 Not Found
+        500 Internal Server Error
+    """
+
+@blueprint.route("/<int:team_id>/users", methods=["DELETE"])
+@authenticate
+def delete_single_team_users(team_id):
+    """Delete all users for a team
+
+    Returns:
+        204 No content
+        404 Not found
+        500 Internal Server Error
+    """
