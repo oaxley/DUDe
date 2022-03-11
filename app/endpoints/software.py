@@ -25,12 +25,16 @@ from app.helpers import authenticate
 #----- Globals
 blueprint = Blueprint('software', __name__, url_prefix="/software")
 
+# valid routes for this blueprint
+ROUTE_1="/"
+ROUTE_2="/<int:software_id>"
+
 
 #----- Functions
 #
 # generic routes
 #
-@blueprint.route("/", methods=["POST"])
+@blueprint.route(ROUTE_1, methods=["POST"])
 @authenticate
 def post_software():
     """Create a new software
@@ -41,7 +45,7 @@ def post_software():
         500 Internal Server Error
     """
 
-@blueprint.route("/", methods=["GET"])
+@blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
 def get_software():
     """Get all the software
@@ -52,7 +56,7 @@ def get_software():
         500 Internal Server Error
     """
 
-@blueprint.route("/", methods=["PUT"])
+@blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_software():
     """Update all the software - Not Implemented
@@ -62,7 +66,7 @@ def put_software():
     """
     return (jsonify({}), 405)
 
-@blueprint.route("/", methods=["DELETE"])
+@blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
 def delete_software():
     """Delete all the software
@@ -77,7 +81,7 @@ def delete_software():
 #
 # routes for a single software
 #
-@blueprint.route("/<int:software_id>", methods=["POST"])
+@blueprint.route(ROUTE_2, methods=["POST"])
 @authenticate
 def post_single_software(software_id):
     """This endpoint has no meaning
@@ -85,8 +89,9 @@ def post_single_software(software_id):
     Returns:
         405 Method not allowed
     """
+    return (jsonify({}), 405)
 
-@blueprint.route("/<int:software_id>", methods=["GET"])
+@blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_software(software_id):
     """Retrieve details for a software
 
@@ -96,7 +101,7 @@ def get_single_software(software_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:software_id>", methods=["PUT"])
+@blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
 def put_single_software(software_id):
     """Update details for a software
@@ -107,7 +112,7 @@ def put_single_software(software_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:software_id>", methods=["DELETE"])
+@blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
 def delete_single_software(software_id):
     """Delete a software

@@ -25,12 +25,17 @@ from app.helpers import authenticate
 #----- Globals
 blueprint = Blueprint('right', __name__, url_prefix="/rights")
 
+# valid routes for this blueprint
+ROUTE_1="/"
+ROUTE_2="/<int:right_id>"
+ROUTE_3="/<int:right_id>/users"
+
 
 #----- Functions
 #
 # generic routes
 #
-@blueprint.route("/", methods=["POST"])
+@blueprint.route(ROUTE_1, methods=["POST"])
 @authenticate
 def post_right():
     """Create a new right
@@ -41,10 +46,10 @@ def post_right():
         500 Internal Server Error
     """
 
-@blueprint.route("/", methods=["GET"])
+@blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
 def get_right():
-    """Get all the right
+    """Get all the rights
 
     Returns:
         200 OK
@@ -52,7 +57,7 @@ def get_right():
         500 Internal Server Error
     """
 
-@blueprint.route("/", methods=["PUT"])
+@blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_right():
     """Update all the rights - Not Implemented
@@ -62,7 +67,7 @@ def put_right():
     """
     return (jsonify({}), 405)
 
-@blueprint.route("/", methods=["DELETE"])
+@blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
 def delete_right():
     """Delete all the rights
@@ -77,7 +82,7 @@ def delete_right():
 #
 # routes for a single right
 #
-@blueprint.route("/<int:right_id>", methods=["POST"])
+@blueprint.route(ROUTE_2, methods=["POST"])
 @authenticate
 def post_single_right(right_id):
     """This endpoint has no meaning
@@ -85,8 +90,9 @@ def post_single_right(right_id):
     Returns:
         405 Method not allowed
     """
+    return (jsonify({}), 405)
 
-@blueprint.route("/<int:right_id>", methods=["GET"])
+@blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_right(right_id):
     """Retrieve details for a right
 
@@ -96,7 +102,7 @@ def get_single_right(right_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:right_id>", methods=["PUT"])
+@blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
 def put_single_right(right_id):
     """Update details for a right
@@ -107,7 +113,7 @@ def put_single_right(right_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:right_id>", methods=["DELETE"])
+@blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
 def delete_single_right(right_id):
     """Delete a right
@@ -118,10 +124,11 @@ def delete_single_right(right_id):
         500 Internal Server Error
     """
 
+
 #
 # routes for users relationship
 #
-@blueprint.route("/<int:right_id>/users", methods=["POST"])
+@blueprint.route(ROUTE_3, methods=["POST"])
 @authenticate
 def post_single_right_users(right_id):
     """Create a new user and associate it with the right
@@ -133,7 +140,7 @@ def post_single_right_users(right_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:right_id>/users", methods=["GET"])
+@blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
 def get_single_right_users(right_id):
     """Retrieve all users for a right
@@ -144,7 +151,7 @@ def get_single_right_users(right_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:right_id>/users", methods=["PUT"])
+@blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
 def put_single_right_users(right_id):
     """Update all users for a right
@@ -155,7 +162,7 @@ def put_single_right_users(right_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:right_id>/users", methods=["DELETE"])
+@blueprint.route(ROUTE_3, methods=["DELETE"])
 @authenticate
 def delete_single_right_users(right_id):
     """Delete all users for a right

@@ -25,12 +25,17 @@ from app.helpers import authenticate
 #----- Globals
 blueprint = Blueprint('unit', __name__, url_prefix="/units")
 
+# valid routes for this blueprint
+ROUTE_1="/"
+ROUTE_2="/<int:unit_id>"
+ROUTE_3="/<int:unit_id>/teams"
+
 
 #----- Functions
 #
 # generic routes
 #
-@blueprint.route("/", methods=["POST"])
+@blueprint.route(ROUTE_1, methods=["POST"])
 @authenticate
 def post_unit():
     """Create a new unit
@@ -41,7 +46,7 @@ def post_unit():
         500 Internal Server Error
     """
 
-@blueprint.route("/", methods=["GET"])
+@blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
 def get_unit():
     """Get all the units
@@ -52,7 +57,7 @@ def get_unit():
         500 Internal Server Error
     """
 
-@blueprint.route("/", methods=["PUT"])
+@blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_unit():
     """Update all the units - Not Implemented
@@ -62,7 +67,7 @@ def put_unit():
     """
     return (jsonify({}), 405)
 
-@blueprint.route("/", methods=["DELETE"])
+@blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
 def delete_unit():
     """Delete all the units
@@ -77,7 +82,7 @@ def delete_unit():
 #
 # routes for a single unit
 #
-@blueprint.route("/<int:unit_id>", methods=["POST"])
+@blueprint.route(ROUTE_2, methods=["POST"])
 @authenticate
 def post_single_unit(unit_id):
     """This endpoint has no meaning
@@ -85,8 +90,9 @@ def post_single_unit(unit_id):
     Returns:
         405 Method not allowed
     """
+    return (jsonify({}), 405)
 
-@blueprint.route("/<int:unit_id>", methods=["GET"])
+@blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_unit(unit_id):
     """Retrieve details for a unit
 
@@ -96,7 +102,7 @@ def get_single_unit(unit_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:unit_id>", methods=["PUT"])
+@blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
 def put_single_unit(unit_id):
     """Update details for a unit
@@ -107,7 +113,7 @@ def put_single_unit(unit_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:unit_id>", methods=["DELETE"])
+@blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
 def delete_single_unit(unit_id):
     """Delete a unit
@@ -122,10 +128,10 @@ def delete_single_unit(unit_id):
 #
 # routes for teams
 #
-@blueprint.route("/<int:unit_id>/teams", methods=["POST"])
+@blueprint.route(ROUTE_3, methods=["POST"])
 @authenticate
 def post_single_unit_teams(unit_id):
-    """Creata a new team and associate it with the unit
+    """Create a new team and associate it with the unit
 
     Returns:
         201 + Location of the new unit
@@ -134,7 +140,7 @@ def post_single_unit_teams(unit_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:unit_id>/teams", methods=["GET"])
+@blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
 def get_single_unit_teams(unit_id):
     """Retrieve all teams for a unit
@@ -145,7 +151,7 @@ def get_single_unit_teams(unit_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:unit_id>/teams", methods=["PUT"])
+@blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
 def put_single_unit_teams(unit_id):
     """Update all teams for a unit
@@ -156,7 +162,7 @@ def put_single_unit_teams(unit_id):
         500 Internal Server Error
     """
 
-@blueprint.route("/<int:unit_id>/teams", methods=["DELETE"])
+@blueprint.route(ROUTE_3, methods=["DELETE"])
 @authenticate
 def delete_single_unit_teams(unit_id):
     """Delete all teams for a unit
