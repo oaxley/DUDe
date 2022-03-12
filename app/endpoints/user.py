@@ -15,11 +15,15 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort
-from app import app, db
+from flask import Blueprint, jsonify, request, url_for
 
-from app.models import User
-from app.helpers import authenticate
+from app import app, db
+from app.models import Team, User
+
+from app.helpers import (
+    authenticate, errorResponse,
+    locationResponse, dataResponse, validate
+)
 
 
 #----- Globals
@@ -43,8 +47,37 @@ def post_user():
     Returns:
         201 Location
         400 Bad Request
+        404 Not Found
         500 Internal Server Error
     """
+    data = request.get_json() or {}
+
+    # check parameters
+    try:
+        validate(data, [ 'name', 'email', 'team_id' ])
+    except Exception as e:
+        return errorResponse(400, str(e))
+
+    # check if the team exists
+    team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
+    if team is None:
+        return errorResponse(404, f"Could not find team with ID #{data['team_id']}")
+
+    # check if the user exists already or not
+    user: Optional[User] = User.query.filter_by(name=data['name'], email=data['email'], team_id=team.id).first()
+    if user is not None:
+        return errorResponse(400, f"User already existing for this team.")
+
+    try:
+        user = User(name=data['name'], email=data['email'], team_id=team.id)
+
+        db.session.add(user)
+        db.session.commit()
+
+        return locationResponse(user.id, url_for("user.get_single_user", user_id=user.id))
+
+    except Exception as e:
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -65,7 +98,7 @@ def put_user():
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -90,7 +123,7 @@ def post_single_user(user_id):
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_user(user_id):
@@ -101,6 +134,20 @@ def get_single_user(user_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the user
+    user: Optional[User] = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return errorResponse(404, f"Could not find user with ID #{user_id}")
+
+    try:
+        return dataResponse({
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'team_id': user.team_id
+        })
+    except Exception as e:
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
