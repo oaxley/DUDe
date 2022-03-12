@@ -13,6 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
+from email import message
 from typing import Any, List, Optional
 
 from flask import (
@@ -24,7 +25,7 @@ from app import app, db
 from app.models import Company
 from app.helpers import (
     authenticate, errorResponse,
-    locationResponse
+    locationResponse, dataResponse
 )
 
 #----- Globals
@@ -119,6 +120,19 @@ def get_single_company(company_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the company
+    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
+    if company is None:
+        return errorResponse(404, f"Could not find company with ID #{company_id}")
+
+    try:
+        return  dataResponse({
+            'id': company.id,
+            'name': company.name
+        })
+
+    except Exception as e:
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -130,6 +144,7 @@ def put_single_company(company_id):
         404 Not found
         500 Internal Server Error
     """
+
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate

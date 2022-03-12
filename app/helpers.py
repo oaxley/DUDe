@@ -13,7 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
-from typing import Any, List, Optional
+from typing import Any, List, Optional, TypeVar, Generic
 
 from datetime import datetime, timezone
 
@@ -79,4 +79,10 @@ def locationResponse(item_id: int, url: str) -> Response:
     response = addHeaders(response)
     response.headers['Location'] = url
 
+    return response
+
+def dataResponse(message) -> Response:
+    """Create a 200 HTTP response"""
+    response = make_response(jsonify(message), 200)
+    response = addHeaders(response)
     return response
