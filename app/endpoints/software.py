@@ -15,11 +15,17 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort
-from app import app, db
+from uuid import uuid4
+from flask import Blueprint, jsonify, request, url_for
 
-from app.models import Software
-from app.helpers import authenticate
+from app import app, db
+from app.models import Team, Software
+
+from app.helpers import (
+    authenticate, validate,
+    errorResponse, emptyResponse,
+    locationResponse, dataResponse,
+)
 
 
 #----- Globals
@@ -44,6 +50,35 @@ def post_software():
         400 Bad Request
         500 Internal Server Error
     """
+    data = request.get_json() or {}
+
+    # check parameters
+    try:
+        validate(data, [ 'name', 'team_id' ])
+    except Exception as e:
+        return errorResponse(400, str(e))
+
+    # check if the team exists
+    team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
+    if team is None:
+        return errorResponse(404, f"Could not find team with ID #{data['team_id']}.")
+
+    # check if the software exists already or not
+    software: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=team.id).first()
+    if software is not None:
+        return errorResponse(400, "Software already existing for this team.")
+
+    try:
+        software = Software(name=data['name'], apikey=str(uuid4()), team_id=team.id)
+
+        db.session.add(software)
+        db.session.commit()
+
+        return locationResponse(software.id, url_for("software.get_single_software", software_id=software.id))
+
+    except Exception as e:
+        return errorResponse(500, str(e))
+
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -64,7 +99,7 @@ def put_software():
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -89,7 +124,8 @@ def post_single_software(software_id):
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
+
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_software(software_id):
@@ -100,6 +136,22 @@ def get_single_software(software_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the software
+    software: Optional[Software] = Software.query.filter_by(id=software_id).first()
+    if software is None:
+        return errorResponse(404, f"Could not find software with ID #{software_id}.")
+
+    try:
+        return dataResponse({
+            'id': software.id,
+            'name': software.name,
+            'apikey': software.apikey,
+            'team_id': software.team_id
+        })
+
+    except Exception as e:
+        return errorResponse(500, str(e))
+
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -108,9 +160,36 @@ def put_single_software(software_id):
 
     Returns:
         204 No Content
+        400 Bad Request
         404 Not Found
         500 Internal Server Error
     """
+    data = request.get_json() or {}
+
+    # lookup for the software
+    software: Optional[Software] = Software.query.filter_by(id=software_id).first()
+    if software is None:
+        return errorResponse(404, f"Could not find software with ID #{software_id}.")
+
+    # update fields of interests
+    try:
+        for key in data:
+            if key == 'token':
+                continue
+
+            if key not in [ 'name', 'team_id' ]:
+                return errorResponse(400, f"Could not update field '{key}'.")
+
+            setattr(software, key, data[key])
+
+        db.session.add(software)
+        db.session.commit()
+
+        return emptyResponse()
+
+    except Exception as e:
+        return errorResponse(500, str(e))
+
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -122,3 +201,16 @@ def delete_single_software(software_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the software
+    software: Optional[Software] = Software.query.filter_by(id=software_id).first()
+    if software is None:
+        return errorResponse(404, f"Could not find software with ID #{software_id}.")
+
+    try:
+        db.session.delete(software)
+        db.session.commit()
+
+        return emptyResponse()
+
+    except Exception as e:
+        return errorResponse(500, str(e))
