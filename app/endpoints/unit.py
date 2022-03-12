@@ -15,11 +15,16 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, url_for
 from app import app, db
 
-from app.models import Unit
-from app.helpers import authenticate
+from app.models import Company, Unit
+
+from app.helpers import (
+    authenticate, errorResponse,
+    locationResponse, dataResponse
+)
+
 
 
 #----- Globals
@@ -41,10 +46,41 @@ def post_unit():
     """Create a new unit
 
     Returns:
-        201 + Location
+        201 Location
         400 Bad Request
+        404 Not found
         500 Internal Server Error
     """
+    data = request.get_json() or {}
+
+    # check parameters
+    if 'company_id' not in data:
+        return errorResponse(400, "Field 'company_id' is missing from input data.")
+
+    if 'name' not in data:
+        return errorResponse(400, "Field 'name' is missing from input data.")
+
+    # check if the company exists
+    company: Optional[Company] = Company.query.filter_by(id=data['company_id']).first()
+    if company is None:
+        return errorResponse(404, f"Could not find company with ID #{data['company_id']}")
+
+    # check if the unit exists already or not
+    unit: Optional[Unit] = Unit.query.filter_by(name=data['name'], company_id=company.id).first()
+    if unit is not None:
+        return errorResponse(400, "Unit already existing for this company.")
+
+    try:
+        unit = Unit(name=data['name'], company_id=company.id)
+
+        db.session.add(unit)
+        db.session.commit()
+
+        return locationResponse(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
+
+    except Exception as e:
+        errorResponse(500, str(e))
+
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -65,7 +101,7 @@ def put_unit():
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -90,7 +126,7 @@ def post_single_unit(unit_id):
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_unit(unit_id):
