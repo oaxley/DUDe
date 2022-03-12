@@ -55,11 +55,11 @@ def addHeaders(resp: Response) -> Response:
     return resp
 
 # format the error messages
-def errorResponse(code: int, message: str) -> Response:
+def errorResponse(code: int, value: str) -> Response:
     message = jsonify({
         "error": {
             "code": f"{code}",
-            "message": message
+            "message": value
         }
     })
 
@@ -85,5 +85,11 @@ def locationResponse(item_id: int, url: str) -> Response:
 def dataResponse(message) -> Response:
     """Create a 200 HTTP response"""
     response = make_response(jsonify(message), 200)
+    response = addHeaders(response)
+    return response
+
+def emptyResponse() -> Response:
+    """Create a 204 HTTP response"""
+    response = make_response(jsonify({}), 204)
     response = addHeaders(response)
     return response
