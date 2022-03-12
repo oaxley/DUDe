@@ -15,11 +15,15 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, url_for
 from app import app, db
 
-from app.models import Team
-from app.helpers import authenticate
+from app.models import Team, Unit
+
+from app.helpers import (
+    authenticate, errorResponse,
+    locationResponse, dataResponse
+)
 
 
 #----- Globals
@@ -43,10 +47,40 @@ def post_team():
     """Create a new team
 
     Returns:
-        201 + Location
+        201 Location
         400 Bad Request
+        404 Not Found
         500 Internal Server Error
     """
+    data = request.get_json() or {}
+
+    # check parameters
+    if 'unit_id' not in data:
+        return errorResponse(400, "Field 'unit_id' is missing from input data.")
+
+    if 'name' not in data:
+        return errorResponse(400, "Field 'name' is missing from input data.")
+
+    # check if the unit exists
+    unit: Optional[Unit] = Unit.query.filter_by(id=data['unit_id']).first()
+    if unit is None:
+        return errorResponse(404, f"Could not find unit with ID #{data['unit_id']}")
+
+    # check if the team exists already or not
+    team: Optional[Team] = Team.query.filter_by(name=data['name'], unit_id=unit.id).first()
+    if team is not None:
+        return errorResponse(400, "Team already existing for this unit.")
+
+    try:
+        team = Team(name=data['name'], unit_id=unit.id)
+
+        db.session.add(team)
+        db.session.commit()
+
+        return locationResponse(team.id, url_for("team.get_single_team", team_id=team.id))
+
+    except Exception as e:
+        errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -103,6 +137,20 @@ def get_single_team(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        errorResponse(404, f"Could not find team with ID #{team_id}")
+
+    try:
+        return dataResponse({
+            'id': team.id,
+            'name': team.name,
+            'unit_id': team.unit_id
+        })
+
+    except Exception as e:
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
