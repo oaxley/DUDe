@@ -15,14 +15,14 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort, url_for
-from app import app, db
+from flask import Blueprint, jsonify, request, url_for
 
+from app import app, db
 from app.models import Team, Unit
 
 from app.helpers import (
     authenticate, errorResponse,
-    locationResponse, dataResponse
+    locationResponse, dataResponse, validate
 )
 
 
@@ -55,11 +55,10 @@ def post_team():
     data = request.get_json() or {}
 
     # check parameters
-    if 'unit_id' not in data:
-        return errorResponse(400, "Field 'unit_id' is missing from input data.")
-
-    if 'name' not in data:
-        return errorResponse(400, "Field 'name' is missing from input data.")
+    try:
+        validate(data, [ 'name', 'unit_id' ])
+    except Exception as e:
+        return errorResponse(400, str(e))
 
     # check if the unit exists
     unit: Optional[Unit] = Unit.query.filter_by(id=data['unit_id']).first()
@@ -80,7 +79,7 @@ def post_team():
         return locationResponse(team.id, url_for("team.get_single_team", team_id=team.id))
 
     except Exception as e:
-        errorResponse(500, str(e))
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -101,7 +100,7 @@ def put_team():
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -126,7 +125,7 @@ def post_single_team(team_id):
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_team(team_id):
@@ -140,7 +139,7 @@ def get_single_team(team_id):
     # lookup for the team
     team: Optional[Team] = Team.query.filter_by(id=team_id).first()
     if team is None:
-        errorResponse(404, f"Could not find team with ID #{team_id}")
+        return errorResponse(404, f"Could not find team with ID #{team_id}")
 
     try:
         return dataResponse({
