@@ -47,6 +47,12 @@ def authenticate(fn):
 
     return wrapper
 
+# validate data entries
+def validate(data: Any, fields: List[str]):
+    for field in fields:
+        if field not in data:
+            raise Exception(f"Field '{field}' is missing from input data.")
+
 # always add these headers to each response
 def addHeaders(resp: Response) -> Response:
     # API version
