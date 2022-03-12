@@ -15,8 +15,15 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
+from datetime import datetime, timezone
+
 from functools import wraps
-from flask import request, jsonify, abort
+
+from flask import (
+    request, abort, jsonify,
+    make_response, Response
+)
+
 from app import app
 
 
@@ -38,3 +45,38 @@ def authenticate(fn):
         return fn(*args, **kwargs)
 
     return wrapper
+
+# always add these headers to each response
+def addHeaders(resp: Response) -> Response:
+    # API version
+    resp.headers['X-API-Version'] = app.config['VERSION']
+
+    return resp
+
+# format the error messages
+def errorResponse(code: int, message: str) -> Response:
+    message = jsonify({
+        "error": {
+            "code": f"{code}",
+            "message": message
+        }
+    })
+
+    # create the response
+    response = make_response(message, code)
+    response = addHeaders(response)
+
+    return response
+
+# location return message
+def locationResponse(item_id: int, url: str) -> Response:
+    """Create the 201 HTTP Response"""
+    message = jsonify({
+        "id": f"{item_id}",
+    })
+
+    response = make_response(message, 201)
+    response = addHeaders(response)
+    response.headers['Location'] = url
+
+    return response

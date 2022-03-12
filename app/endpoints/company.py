@@ -15,12 +15,17 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort
+from flask import (
+    Blueprint, jsonify, request, abort, url_for
+)
+
 from app import app, db
 
 from app.models import Company
-from app.helpers import authenticate
-
+from app.helpers import (
+    authenticate, errorResponse,
+    locationResponse
+)
 
 #----- Globals
 blueprint = Blueprint('company', __name__, url_prefix="/companies")
@@ -45,6 +50,26 @@ def post_company():
         500 Internal Server Error
         400 Bad Request
     """
+    data = request.get_json()
+
+    if 'name' not in data:
+        return errorResponse(400, "Name missing from input data.")
+
+    company: Optional[Company] = Company.query.filter_by(name=data['name']).first()
+    if company is not None:
+        return errorResponse(400, "Company already exist.")
+
+    try:
+        company = Company(name=data['name'])
+
+        db.session.add(company)
+        db.session.commit()
+
+        resp = locationResponse(company.id, url_for("company.get_single_company", company_id=company.id))
+        return resp
+
+    except Exception as e:
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
