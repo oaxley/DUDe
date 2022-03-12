@@ -85,7 +85,7 @@ def put_company():
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -109,7 +109,7 @@ def post_single_company(company_id):
     Returns:
         405 Method not allowed
     """
-    return (jsonify({}), 405)
+    return errorResponse(405, "Method not allowed")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_company(company_id):
