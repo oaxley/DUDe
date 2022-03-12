@@ -137,6 +137,21 @@ def get_single_unit(unit_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the unit
+    unit: Optional[Unit] = Unit.query.filter_by(id=unit_id).first()
+    if unit is None:
+        errorResponse(404, f"Could not find unit with ID #{unit_id}")
+
+    try:
+        return dataResponse({
+            'id': unit.id,
+            'name': unit.name,
+            'company_id': unit.company_id
+        })
+
+    except Exception as e:
+        return errorResponse(500, str(e))
+
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
