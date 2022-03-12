@@ -30,7 +30,7 @@ from app.helpers import (
 blueprint = Blueprint('right', __name__, url_prefix="/rights")
 
 # valid routes for this blueprint
-ROUTE_1="/"
+ROUTE_1=""
 ROUTE_2="/<int:right_id>"
 ROUTE_3="/<int:right_id>/rights"
 

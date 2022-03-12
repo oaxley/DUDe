@@ -31,7 +31,7 @@ from app.helpers import (
 blueprint = Blueprint('company', __name__, url_prefix="/companies")
 
 # valid routes for this blueprint
-ROUTE_1="/"
+ROUTE_1=""
 ROUTE_2="/<int:company_id>"
 ROUTE_3="/<int:company_id>/units"
 

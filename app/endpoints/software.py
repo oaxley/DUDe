@@ -32,7 +32,7 @@ from app.helpers import (
 blueprint = Blueprint('software', __name__, url_prefix="/software")
 
 # valid routes for this blueprint
-ROUTE_1="/"
+ROUTE_1=""
 ROUTE_2="/<int:software_id>"
 
 
