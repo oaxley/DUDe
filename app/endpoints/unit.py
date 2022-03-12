@@ -15,16 +15,15 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, abort, url_for
-from app import app, db
+from flask import Blueprint, jsonify, request, url_for
 
+from app import app, db
 from app.models import Company, Unit
 
 from app.helpers import (
-    authenticate, errorResponse,
-    locationResponse, dataResponse
+    authenticate, validate,
+    errorResponse, locationResponse, dataResponse
 )
-
 
 
 #----- Globals
@@ -54,11 +53,10 @@ def post_unit():
     data = request.get_json() or {}
 
     # check parameters
-    if 'company_id' not in data:
-        return errorResponse(400, "Field 'company_id' is missing from input data.")
-
-    if 'name' not in data:
-        return errorResponse(400, "Field 'name' is missing from input data.")
+    try:
+        validate(data, ['name', 'company_id'])
+    except Exception as e:
+        return errorResponse(400, str(e))
 
     # check if the company exists
     company: Optional[Company] = Company.query.filter_by(id=data['company_id']).first()
@@ -79,7 +77,7 @@ def post_unit():
         return locationResponse(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
 
     except Exception as e:
-        errorResponse(500, str(e))
+        return errorResponse(500, str(e))
 
 
 @blueprint.route(ROUTE_1, methods=["GET"])
@@ -140,7 +138,7 @@ def get_single_unit(unit_id):
     # lookup for the unit
     unit: Optional[Unit] = Unit.query.filter_by(id=unit_id).first()
     if unit is None:
-        errorResponse(404, f"Could not find unit with ID #{unit_id}")
+        return errorResponse(404, f"Could not find unit with ID #{unit_id}")
 
     try:
         return dataResponse({
