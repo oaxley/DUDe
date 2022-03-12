@@ -34,14 +34,15 @@ from app import app
 def authenticate(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        # retrieve the data from the request
-        data = request.get_json() or {}
-
-        # check the validity of the token
-        if ('token' not in data) or (data['token'] != app.config['DUDE_SECRET_KEY']):
+        # look for the X-API-Token header in the request
+        try:
+            token = request.headers['X-API-Token']
+            if token != app.config['DUDE_SECRET_KEY']:
+                raise Exception()
+        except Exception:
             abort(403)
 
-        # call the fuinction
+        # call the function
         return fn(*args, **kwargs)
 
     return wrapper
