@@ -90,6 +90,37 @@ def get_software():
         400 Bad Request
         500 Internal Server Error
     """
+    # retrieve the parameters from the request (or set the default value)
+    offset = request.args.get('offset') or 0
+    limit  = request.args.get('limit') or 10
+
+    try:
+        # retrieve all the items between the limits
+        items: List[Software] = db.session.query(Software) \
+                                .order_by(Software.id) \
+                                .filter(Software.id >= int(offset)) \
+                                .limit(int(limit)) \
+                                .all()
+
+        # build the result dictionary
+        result = {
+            "offset": f"{offset}",
+            "limit": f"{limit}",
+            "software": []
+        }
+        for item in items:
+            result['software'].append({
+                "id": f"{item.id}",
+                "name": item.name,
+                "apikey": item.apikey,
+                "team_id": f"{item.team_id}"
+            })
+
+        # return the response
+        return dataResponse(result)
+
+    except Exception as e:
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -143,10 +174,10 @@ def get_single_software(software_id):
 
     try:
         return dataResponse({
-            'id': software.id,
+            'id': f"{software.id}",
             'name': software.name,
             'apikey': software.apikey,
-            'team_id': software.team_id
+            'team_id': f"{software.team_id}"
         })
 
     except Exception as e:
