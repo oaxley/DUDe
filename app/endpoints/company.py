@@ -16,18 +16,16 @@ from __future__ import annotations
 from email import message
 from typing import Any, List, Optional
 
-from flask import (
-    Blueprint, jsonify, request, abort, url_for
-)
+from flask import Blueprint, jsonify, request, url_for
 
 from app import app, db
-
 from app.models import Company, Unit
 
 from app.helpers import (
-    authenticate, errorResponse,
-    locationResponse, dataResponse
+    authenticate, validate,
+    errorResponse, locationResponse, dataResponse
 )
+
 
 #----- Globals
 blueprint = Blueprint('company', __name__, url_prefix="/companies")
@@ -54,8 +52,11 @@ def post_company():
     """
     data = request.get_json() or {}
 
-    if 'name' not in data:
-        return errorResponse(400, "Field 'name' is missing from input data.")
+    # check parameters
+    try:
+        validate(data, ['name'])
+    except Exception as e:
+        return errorResponse(400, str(e))
 
     company: Optional[Company] = Company.query.filter_by(name=data['name']).first()
     if company is not None:
@@ -181,7 +182,7 @@ def post_single_company_units(company_id):
     # prepare the new unit
     data = request.get_json() or {}
     if 'name' not in data:
-        errorResponse(400, "Field 'name' is missing from input data.")
+        return errorResponse(400, "Field 'name' is missing from input data.")
 
     # check if the unit exists already or not
     unit: Optional[Unit] = Unit.query.filter_by(name=data['name'], company_id=company.id).first()
@@ -197,7 +198,7 @@ def post_single_company_units(company_id):
         return locationResponse(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
 
     except Exception as e:
-        errorResponse(500, str(e))
+        return errorResponse(500, str(e))
 
 @blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
