@@ -13,7 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
-from typing import Any, List, Optional, TypeVar, Generic
+from typing import Any, List, Dict, Optional, Tuple
 
 from datetime import datetime, timezone
 
@@ -21,7 +21,7 @@ from functools import wraps
 
 from flask import (
     request, abort, jsonify,
-    make_response, Response
+    make_response, Response, Request
 )
 
 from app import app
@@ -47,55 +47,164 @@ def authenticate(fn):
 
     return wrapper
 
-# validate data entries
-def validate(data: Any, fields: List[str]):
-    for field in fields:
-        if field not in data:
-            raise Exception(f"Field '{field}' is missing from input data.")
 
-# always add these headers to each response
-def addHeaders(resp: Response) -> Response:
-    # API version
-    resp.headers['X-API-Version'] = app.config['VERSION']
+#----- Classes
 
-    return resp
+class Validator:
+    """This class regroups all the methods to validate inputs data or parameters"""
 
-# format the error messages
-def errorResponse(code: int, value: str) -> Response:
-    message = jsonify({
-        "error": {
-            "code": f"{code}",
-            "message": value
-        }
-    })
+    def __init__(self):
+        pass
 
-    # create the response
-    response = make_response(message, code)
-    response = addHeaders(response)
+    @staticmethod
+    def data(input: Dict[str, Any], fields: List[str]) -> None:
+        """Validate input JSON data
 
-    return response
+        Args:
+            input: the json input
+            fields: the list of fields that should be present in the input
 
-# location return message
-def locationResponse(item_id: int, url: str) -> Response:
-    """Create the 201 HTTP Response"""
-    message = jsonify({
-        "id": f"{item_id}",
-    })
+        Raises:
+            'KeyError' if a field is missing from the the input
+        """
+        for field in fields:
+            if field not in input:
+                raise KeyError(f"Field '{field}' is missing from input data.")
 
-    response = make_response(message, 201)
-    response = addHeaders(response)
-    response.headers['Location'] = url
+    @staticmethod
+    def parameters(request: Request, fields: List[Tuple[str, Any]]):
+        """Validate input parameters from query
 
-    return response
+        Args:
+            request: the HTTP request
+            fields: a list of Tuple with the name of the parameter and its default value
 
-def dataResponse(message) -> Response:
-    """Create a 200 HTTP response"""
-    response = make_response(jsonify(message), 200)
-    response = addHeaders(response)
-    return response
+        Raises:
+            'ValueError' if the parameter cannot be cast to a proper value
 
-def emptyResponse() -> Response:
-    """Create a 204 HTTP response"""
-    response = make_response(jsonify({}), 204)
-    response = addHeaders(response)
-    return response
+        Returns:
+            a Dict[str, Any] with the parameter values
+        """
+        results: Dict[str, Any] = {}
+        for field, default in fields:
+            value = request.args.get(field)
+
+            if value is None:
+                results[field] = default
+            else:
+                if type(default) is int:
+                    try:
+                        results[field] = int(value)
+                        continue
+                    except ValueError:
+                        raise ValueError(f"Field {field} cannot be converted to an int.")
+
+                if type(default) is str:
+                    try:
+                        results[field] = str(value)
+                        continue
+                    except ValueError:
+                        raise ValueError(f"Field {field} cannot be converted to a str.")
+
+                if type(default) is bool:
+                    results[field] = bool(value)
+                    continue
+
+        return results
+
+class HTTPResponse:
+    """This class regroups all the HTTP responses"""
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def headers(resp: Response) -> Response:
+        """Add custom header fields to the response
+
+        Args:
+            resp: the response object
+
+        Returns:
+            the response object with extra headers
+        """
+        # API version
+        resp.headers['X-API-Version'] = app.config['VERSION']
+
+        return resp
+
+    @staticmethod
+    def error(code: int, message: str) -> Response:
+        """Format an error response with the code and value provided
+
+        Args:
+            code: the HTTP code for the error (4xx or 5xx)
+            value: the message to add the error response
+
+        Returns:
+            a Response object
+        """
+        # create the JSON value for this error
+        value = jsonify({
+            "error": {
+                "code": f"{code}",
+                "message": value
+            }
+        })
+
+        # create the response and add extra headers
+        response = make_response(value, code)
+        response = HTTPResponse.headers(response)
+
+        return response
+
+    @staticmethod
+    def location(item_id: int, url: str) -> Response:
+        """Create a HTTP 201 (Created) response
+
+        Args:
+            item_id: the ID of the new item created
+            url: the url for the Location header
+
+        Returns:
+            a Response object
+        """
+        value = jsonify({
+            "id": f"{item_id}",
+        })
+
+        # create the response and add extra headers
+        response = make_response(value, 201)
+        response = HTTPResponse.headers(response)
+        response.headers['Location'] = url
+
+        return response
+
+    @staticmethod
+    def noContent() -> Response:
+        """Create a HTTP 204 (No Content) response
+
+        Returns:
+            a Response object
+        """
+        # create the response and add extra headers
+        response = make_response(jsonify({}), 204)
+        response = HTTPResponse.headers(response)
+
+        return response
+
+    @staticmethod
+    def ok(message) -> Response:
+        """Create a HTTP 200 (OK) response
+
+        Args:
+            message: the data for the response
+
+        Returns:
+            a Response object
+        """
+        # create the response and add extra headers
+        response = make_response(jsonify(message), 200)
+        response = HTTPResponse.headers(response)
+
+        return response
