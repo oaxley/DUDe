@@ -210,10 +210,12 @@ class HTTPResponse:
         return response
 
     @staticmethod
-    def notAllowed() -> Response:
+    def notAllowed(allowed = "GET, PUT, DELETE") -> Response:
         """Create a HTTP 405 (Method not allowed) response
 
         Returns:
             a Response object
         """
-        return HTTPResponse.error(405, "Method not allowed.")
+        response = HTTPResponse.error(405, "Method not allowed.")
+        response.headers['Allow'] = allowed
+        return response
