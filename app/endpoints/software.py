@@ -150,9 +150,17 @@ def delete_software():
 
     Returns:
         204 No content
-        404 Not found
         500 Internal Server Error
     """
+    try:
+        # delete all the rows in the table
+        Software.query.delete()
+        db.session.commit()
+
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 
 #
