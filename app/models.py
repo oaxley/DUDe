@@ -18,22 +18,22 @@ from app import db
 class Company(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False, unique=True)
-    units = db.relationship('Unit', backref='company', lazy='dynamic')
+    units = db.relationship('Unit', cascade="all,delete", backref='company', lazy='dynamic')
 
 class Unit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
-    teams = db.relationship('Team', backref='unit', lazy='dynamic')
+    teams = db.relationship('Team', cascade="all,delete", backref='unit', lazy='dynamic')
 
 class Team(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), index=True, nullable=False)
     unit_id = db.Column(db.Integer, db.ForeignKey('unit.id'))
 
-    users = db.relationship('User', backref='team', lazy='dynamic')
-    rights = db.relationship('Right', backref='team', lazy='dynamic')
-    software = db.relationship('Software', backref='team', lazy='dynamic')
+    users = db.relationship('User', cascade="all,delete", backref='team', lazy='dynamic')
+    rights = db.relationship('Right', cascade="all,delete", backref='team', lazy='dynamic')
+    software = db.relationship('Software', cascade="all,delete", backref='team', lazy='dynamic')
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
