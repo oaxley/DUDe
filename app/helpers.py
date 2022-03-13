@@ -208,3 +208,12 @@ class HTTPResponse:
         response = HTTPResponse.headers(response)
 
         return response
+
+    @staticmethod
+    def notAllowed() -> Response:
+        """Create a HTTP 405 (Method not allowed) response
+
+        Returns:
+            a Response object
+        """
+        return HTTPResponse.error(405, "Method not allowed.")
