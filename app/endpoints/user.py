@@ -21,8 +21,7 @@ from app import app, db
 from app.models import Team, User
 
 from app.helpers import (
-    authenticate, errorResponse,
-    locationResponse, dataResponse, validate
+    authenticate, Validator, HTTPResponse
 )
 
 
@@ -54,19 +53,19 @@ def post_user():
 
     # check parameters
     try:
-        validate(data, [ 'name', 'email', 'team_id' ])
-    except Exception as e:
-        return errorResponse(400, str(e))
+        Validator.data(data, [ 'name', 'email', 'team_id' ])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
 
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
     if team is None:
-        return errorResponse(404, f"Could not find team with ID #{data['team_id']}")
+        return HTTPResponse.error(404, f"Could not find team with ID #{data['team_id']}")
 
     # check if the user exists already or not
     user: Optional[User] = User.query.filter_by(name=data['name'], email=data['email'], team_id=team.id).first()
     if user is not None:
-        return errorResponse(400, f"User already existing for this team.")
+        return HTTPResponse.error(400, f"User already existing for this team.")
 
     try:
         user = User(name=data['name'], email=data['email'], team_id=team.id)
@@ -74,10 +73,10 @@ def post_user():
         db.session.add(user)
         db.session.commit()
 
-        return locationResponse(user.id, url_for("user.get_single_user", user_id=user.id))
+        return HTTPResponse.location(user.id, url_for("user.get_single_user", user_id=user.id))
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -98,7 +97,7 @@ def put_user():
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -123,7 +122,7 @@ def post_single_user(user_id):
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_user(user_id):
@@ -137,17 +136,17 @@ def get_single_user(user_id):
     # lookup for the user
     user: Optional[User] = User.query.filter_by(id=user_id).first()
     if user is None:
-        return errorResponse(404, f"Could not find user with ID #{user_id}")
+        return HTTPResponse.error(404, f"Could not find user with ID #{user_id}")
 
     try:
-        return dataResponse({
+        return HTTPResponse.ok({
             'id': user.id,
             'name': user.name,
             'email': user.email,
             'team_id': user.team_id
         })
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate

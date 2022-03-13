@@ -57,7 +57,7 @@ def post_software():
     # check parameters
     try:
         Validator.data(data, [ 'name', 'team_id' ])
-    except Exception as e:
+    except KeyError as e:
         return HTTPResponse.error(400, str(e))
 
     # check if the team exists

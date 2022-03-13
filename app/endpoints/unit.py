@@ -21,8 +21,7 @@ from app import app, db
 from app.models import Company, Unit
 
 from app.helpers import (
-    authenticate, validate,
-    errorResponse, locationResponse, dataResponse
+    authenticate, Validator, HTTPResponse
 )
 
 
@@ -54,19 +53,19 @@ def post_unit():
 
     # check parameters
     try:
-        validate(data, ['name', 'company_id'])
-    except Exception as e:
-        return errorResponse(400, str(e))
+        Validator.data(data, ['name', 'company_id'])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
 
     # check if the company exists
     company: Optional[Company] = Company.query.filter_by(id=data['company_id']).first()
     if company is None:
-        return errorResponse(404, f"Could not find company with ID #{data['company_id']}")
+        return HTTPResponse.error(404, f"Could not find company with ID #{data['company_id']}")
 
     # check if the unit exists already or not
     unit: Optional[Unit] = Unit.query.filter_by(name=data['name'], company_id=company.id).first()
     if unit is not None:
-        return errorResponse(400, "Unit already existing for this company.")
+        return HTTPResponse.error(400, "Unit already existing for this company.")
 
     try:
         unit = Unit(name=data['name'], company_id=company.id)
@@ -74,10 +73,10 @@ def post_unit():
         db.session.add(unit)
         db.session.commit()
 
-        return locationResponse(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
+        return HTTPResponse.location(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 
 @blueprint.route(ROUTE_1, methods=["GET"])
@@ -99,7 +98,7 @@ def put_unit():
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -124,7 +123,7 @@ def post_single_unit(unit_id):
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_unit(unit_id):
@@ -138,17 +137,17 @@ def get_single_unit(unit_id):
     # lookup for the unit
     unit: Optional[Unit] = Unit.query.filter_by(id=unit_id).first()
     if unit is None:
-        return errorResponse(404, f"Could not find unit with ID #{unit_id}")
+        return HTTPResponse.error(404, f"Could not find unit with ID #{unit_id}")
 
     try:
-        return dataResponse({
+        return HTTPResponse.ok({
             'id': unit.id,
             'name': unit.name,
             'company_id': unit.company_id
         })
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 
 @blueprint.route(ROUTE_2, methods=["PUT"])

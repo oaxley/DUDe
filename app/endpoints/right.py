@@ -21,8 +21,7 @@ from app import app, db
 from app.models import Team, Right
 
 from app.helpers import (
-    authenticate, errorResponse,
-    locationResponse, dataResponse, validate
+    authenticate, Validator, HTTPResponse
 )
 
 
@@ -53,19 +52,19 @@ def post_right():
 
     # check parameters
     try:
-        validate(data, [ 'name', 'team_id' ])
-    except Exception as e:
-        return errorResponse(400, str(e))
+        Validator.data(data, [ 'name', 'team_id' ])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
 
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
     if team is None:
-        return errorResponse(404, f"Could not find team with ID #{data['team_id']}")
+        return HTTPResponse.error(404, f"Could not find team with ID #{data['team_id']}")
 
     # check if the right exists already or not
     right: Optional[Right] = Right.query.filter_by(name=data['name'], team_id=team.id).first()
     if right is not None:
-        return errorResponse(400, "Right already existing for this team.")
+        return HTTPResponse.error(400, "Right already existing for this team.")
 
     try:
         right = Right(name=data['name'], team_id=team.id)
@@ -73,10 +72,10 @@ def post_right():
         db.session.add(right)
         db.session.commit()
 
-        return locationResponse(right.id, url_for("right.get_single_right", right_id=right.id))
+        return HTTPResponse.location(right.id, url_for("right.get_single_right", right_id=right.id))
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -97,7 +96,7 @@ def put_right():
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -122,7 +121,7 @@ def post_single_right(right_id):
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_right(right_id):
@@ -136,17 +135,17 @@ def get_single_right(right_id):
     # lookup for the right
     right: Optional[Right] = Right.query.filter_by(id=right_id).first()
     if right is None:
-        return errorResponse(404, f"Could not find right with ID #{right_id}")
+        return HTTPResponse.error(404, f"Could not find right with ID #{right_id}")
 
     try:
-        return dataResponse({
+        return HTTPResponse.ok({
             'id': right.id,
             'name': right.name,
             'team_id': right.team_id
         })
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate

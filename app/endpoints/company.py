@@ -22,8 +22,7 @@ from app import app, db
 from app.models import Company, Unit
 
 from app.helpers import (
-    authenticate, validate,
-    errorResponse, locationResponse, dataResponse
+    authenticate, Validator, HTTPResponse
 )
 
 
@@ -54,13 +53,13 @@ def post_company():
 
     # check parameters
     try:
-        validate(data, ['name'])
-    except Exception as e:
-        return errorResponse(400, str(e))
+        Validator.data(data, ['name'])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
 
     company: Optional[Company] = Company.query.filter_by(name=data['name']).first()
     if company is not None:
-        return errorResponse(400, "Company already exist.")
+        return HTTPResponse.error(400, "Company already exist.")
 
     try:
         company = Company(name=data['name'])
@@ -68,11 +67,11 @@ def post_company():
         db.session.add(company)
         db.session.commit()
 
-        resp = locationResponse(company.id, url_for("company.get_single_company", company_id=company.id))
+        resp = HTTPResponse.location(company.id, url_for("company.get_single_company", company_id=company.id))
         return resp
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -87,7 +86,7 @@ def put_company():
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -111,7 +110,7 @@ def post_single_company(company_id):
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_company(company_id):
@@ -125,16 +124,16 @@ def get_single_company(company_id):
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
     if company is None:
-        return errorResponse(404, f"Could not find company with ID #{company_id}")
+        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
 
     try:
-        return  dataResponse({
+        return  HTTPResponse.ok({
             'id': company.id,
             'name': company.name
         })
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -177,17 +176,17 @@ def post_single_company_units(company_id):
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
     if company is None:
-        return errorResponse(404, f"Could not find company with ID #{company_id}")
+        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
 
     # prepare the new unit
     data = request.get_json() or {}
     if 'name' not in data:
-        return errorResponse(400, "Field 'name' is missing from input data.")
+        return HTTPResponse.error(400, "Field 'name' is missing from input data.")
 
     # check if the unit exists already or not
     unit: Optional[Unit] = Unit.query.filter_by(name=data['name'], company_id=company.id).first()
     if unit is not None:
-        return errorResponse(400, "Unit already existing for this company.")
+        return HTTPResponse.error(400, "Unit already existing for this company.")
 
     try:
         unit = Unit(name=data['name'], company_id=company.id)
@@ -195,10 +194,10 @@ def post_single_company_units(company_id):
         db.session.add(unit)
         db.session.commit()
 
-        return locationResponse(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
+        return HTTPResponse.location(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
