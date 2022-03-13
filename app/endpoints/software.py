@@ -13,6 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
+from curses.ascii import HT
 from typing import Any, List, Optional
 
 from uuid import uuid4
@@ -22,9 +23,7 @@ from app import app, db
 from app.models import Team, Software
 
 from app.helpers import (
-    authenticate, validate,
-    errorResponse, emptyResponse,
-    locationResponse, dataResponse,
+    authenticate, Validator, HTTPResponse
 )
 
 
@@ -34,6 +33,9 @@ blueprint = Blueprint('software', __name__, url_prefix="/software")
 # valid routes for this blueprint
 ROUTE_1=""
 ROUTE_2="/<int:software_id>"
+
+# max value for the Limit in query
+MAX_LIMIT_VALUE = 20
 
 
 #----- Functions
@@ -54,19 +56,19 @@ def post_software():
 
     # check parameters
     try:
-        validate(data, [ 'name', 'team_id' ])
+        Validator.data(data, [ 'name', 'team_id' ])
     except Exception as e:
-        return errorResponse(400, str(e))
+        return HTTPResponse.error(400, str(e))
 
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
     if team is None:
-        return errorResponse(404, f"Could not find team with ID #{data['team_id']}.")
+        return HTTPResponse.error(404, f"Could not find team with ID #{data['team_id']}.")
 
     # check if the software exists already or not
     software: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=team.id).first()
     if software is not None:
-        return errorResponse(400, "Software already existing for this team.")
+        return HTTPResponse.error(400, "Software already existing for this team.")
 
     try:
         software = Software(name=data['name'], apikey=str(uuid4()), team_id=team.id)
@@ -74,10 +76,10 @@ def post_software():
         db.session.add(software)
         db.session.commit()
 
-        return locationResponse(software.id, url_for("software.get_single_software", software_id=software.id))
+        return HTTPResponse.location(software.id, url_for("software.get_single_software", software_id=software.id))
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 
 @blueprint.route(ROUTE_1, methods=["GET"])
@@ -91,21 +93,30 @@ def get_software():
         500 Internal Server Error
     """
     # retrieve the parameters from the request (or set the default value)
-    offset = request.args.get('offset') or 0
-    limit  = request.args.get('limit') or 10
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', 10)])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > MAX_LIMIT_VALUE:
+        params['limit'] = MAX_LIMIT_VALUE
 
     try:
         # retrieve all the items between the limits
         items: List[Software] = db.session.query(Software) \
                                 .order_by(Software.id) \
-                                .filter(Software.id >= int(offset)) \
-                                .limit(int(limit)) \
+                                .filter(Software.id >= params['offset']) \
+                                .limit(params['limit']) \
                                 .all()
 
         # build the result dictionary
         result = {
-            "offset": f"{offset}",
-            "limit": f"{limit}",
+            "offset": f"{params['offset']}",
+            "limit": f"{params['limit']}",
             "software": []
         }
         for item in items:
@@ -117,10 +128,10 @@ def get_software():
             })
 
         # return the response
-        return dataResponse(result)
+        return HTTPResponse.ok(result)
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -130,7 +141,7 @@ def put_software():
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -155,7 +166,7 @@ def post_single_software(software_id):
     Returns:
         405 Method not allowed
     """
-    return errorResponse(405, "Method not allowed")
+    return HTTPResponse.notAllowed()
 
 
 @blueprint.route(ROUTE_2, methods=["GET"])
@@ -170,10 +181,10 @@ def get_single_software(software_id):
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
     if software is None:
-        return errorResponse(404, f"Could not find software with ID #{software_id}.")
+        return HTTPResponse.error(404, f"Could not find software with ID #{software_id}.")
 
     try:
-        return dataResponse({
+        return HTTPResponse.ok({
             'id': f"{software.id}",
             'name': software.name,
             'apikey': software.apikey,
@@ -181,7 +192,7 @@ def get_single_software(software_id):
         })
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
@@ -200,7 +211,7 @@ def put_single_software(software_id):
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
     if software is None:
-        return errorResponse(404, f"Could not find software with ID #{software_id}.")
+        return HTTPResponse.error(404, f"Could not find software with ID #{software_id}.")
 
     # update fields of interests
     try:
@@ -209,17 +220,17 @@ def put_single_software(software_id):
                 continue
 
             if key not in [ 'name', 'team_id' ]:
-                return errorResponse(400, f"Could not update field '{key}'.")
+                return HTTPResponse.error(400, f"Could not update field '{key}'.")
 
             setattr(software, key, data[key])
 
         db.session.add(software)
         db.session.commit()
 
-        return emptyResponse()
+        return HTTPResponse.noContent()
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
 
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
@@ -235,13 +246,13 @@ def delete_single_software(software_id):
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
     if software is None:
-        return errorResponse(404, f"Could not find software with ID #{software_id}.")
+        return HTTPResponse.error(404, f"Could not find software with ID #{software_id}.")
 
     try:
         db.session.delete(software)
         db.session.commit()
 
-        return emptyResponse()
+        return HTTPResponse.noContent()
 
     except Exception as e:
-        return errorResponse(500, str(e))
+        return HTTPResponse.error(500, str(e))
