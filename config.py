@@ -29,3 +29,6 @@ class Config:
 
     # application semantic version
     VERSION = "1.0.0"
+
+    # max value for the Limit parameter in "Get All" query
+    MAX_LIMIT_VALUE = 20

@@ -34,9 +34,6 @@ blueprint = Blueprint('software', __name__, url_prefix="/software")
 ROUTE_1=""
 ROUTE_2="/<int:software_id>"
 
-# max value for the Limit in query
-MAX_LIMIT_VALUE = 20
-
 
 #----- Functions
 #
@@ -102,8 +99,8 @@ def get_software():
     params['offset'] = abs(params['offset'])
     params['limit'] = abs(params['limit'])
 
-    if params['limit'] > MAX_LIMIT_VALUE:
-        params['limit'] = MAX_LIMIT_VALUE
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
 
     try:
         # retrieve all the items between the limits
