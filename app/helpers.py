@@ -69,7 +69,7 @@ class Validator:
         """
         for field in fields:
             if field not in input:
-                raise KeyError(f"Field '{field}' is missing from input data.")
+                raise KeyError(f"Field {field} is missing from input data.")
 
     @staticmethod
     def parameters(request: Request, fields: List[Tuple[str, Any]]):
