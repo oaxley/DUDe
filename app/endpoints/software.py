@@ -221,9 +221,6 @@ def put_single_software(software_id):
     # update fields of interests
     try:
         for key in data:
-            if key == 'token':
-                continue
-
             if key not in [ 'name', 'team_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
 
