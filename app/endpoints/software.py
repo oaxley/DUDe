@@ -91,7 +91,7 @@ def get_software():
     """
     # retrieve the parameters from the request (or set the default value)
     try:
-        params = Validator.parameters(request, [('offset', 0), ('limit', 10)])
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
         return HTTPResponse.error(400, str(e))
 
