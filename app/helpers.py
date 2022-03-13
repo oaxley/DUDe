@@ -148,7 +148,7 @@ class HTTPResponse:
         value = jsonify({
             "error": {
                 "code": f"{code}",
-                "message": value
+                "message": message
             }
         })
 
