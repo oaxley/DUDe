@@ -13,13 +13,14 @@
 
 #----- Imports
 from __future__ import annotations
-from email import message
 from typing import Any, List, Optional
 
 from flask import Blueprint, jsonify, request, url_for
 
 from app import app, db
-from app.models import Company, Unit
+from app.models import (
+    Company, Unit, Team, User, Right, Software, UserRight
+)
 
 from app.helpers import (
     authenticate, Validator, HTTPResponse
@@ -77,6 +78,45 @@ def post_company():
 @authenticate
 def get_company():
     """Retrieve all the companies"""
+    # retrieve the parameters from the request (or set the default value)
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
+
+    try:
+        # retrieve all the items between the limits
+        items: List[Company] = db.session.query(Company) \
+                                .order_by(Company.id) \
+                                .filter(Company.id >= params['offset']) \
+                                .limit(params['limit']) \
+                                .all()
+
+        # build the result dictionary
+        result = {
+            "offset": f"{params['offset']}",
+            "limit": f"{params['limit']}",
+            "companies": []
+        }
+        for item in items:
+            result['companies'].append({
+                "id": f"{item.id}",
+                "name": item.name,
+            })
+
+        # return the response
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
+
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -95,9 +135,25 @@ def delete_company():
 
     Returns:
         204 No Content
-        404 Not found
+        500 Internal Server Error
     """
+    try:
+        # delete all the tables (in case the Cascade does not work)
+        Company.query.delete()
+        Unit.query.delete()
+        Team.query.delete()
+        User.query.delete()
+        Right.query.delete()
+        Software.query.delete()
+        UserRight.query.delete()
 
+        # commit the change to the DB
+        db.session.commit()
+
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 #
 # routes for a single company
@@ -142,10 +198,32 @@ def put_single_company(company_id):
 
     Returns:
         204 No Content
+        400 Bad Request
         404 Not found
         500 Internal Server Error
     """
+    data = request.get_json() or {}
 
+    # lookup for the company
+    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
+    if company is None:
+        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
+
+    # update fields of interests
+    try:
+        for key in data:
+            if key not in [ 'name' ]:
+                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+
+            setattr(company, key, data[key])
+
+        db.session.add(company)
+        db.session.commit()
+
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -157,7 +235,19 @@ def delete_single_company(company_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the company
+    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
+    if company is None:
+        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
 
+    try:
+        db.session.delete(company)
+        db.session.commit()
+
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 #
 # routes for units
@@ -205,10 +295,49 @@ def get_single_company_units(company_id):
     """Retrieve all units for company_id
 
     Returns:
-        200 + details as json
+        200 OK
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the company
+    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
+    if company is None:
+        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
+
+    data = request.get_json() or {}
+
+    # check parameters
+    try:
+        Validator.data(data, ['unit_id'])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
+
+    try:
+        # lookup for this unit_id in this company
+        unit: Optional[Unit] = db.session.query(Unit) \
+                                .filter(Unit.company_id == company.id) \
+                                .filter(Unit.id == data['unit_id']) \
+                                .first()
+
+        # build the result dictionaries
+        teams = []
+        for team in unit.teams:
+            teams.append({
+                "name": team.name,
+                "id": team.id
+            })
+
+        result = {
+            "id": f"{unit.id}",
+            "name": unit.name,
+            "company_id": unit.company_id,
+            "teams": teams
+        }
+
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
