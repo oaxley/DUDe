@@ -78,7 +78,6 @@ def post_unit():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
 def get_unit():
@@ -268,8 +267,12 @@ def post_single_unit_teams(unit_id):
         return HTTPResponse.error404(unit_id, 'Unit')
 
     data = request.get_json() or {}
-    if 'name' not in data:
-        return HTTPResponse.error(400, "Field 'name' is missing from the input data.")
+
+    # check parameters
+    try:
+        Validator.data(data, ['name'])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
 
     # check if the team already exists for this unit
     team: Optional[Team] = Team.query.filter_by(name=data['name'], unit_id=unit.id).first()
