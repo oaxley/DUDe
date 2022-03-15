@@ -15,15 +15,13 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, url_for
+from flask import Blueprint, request, url_for
 
 from app import app, db
-from app.models import (
-    Company, Unit, Team, User, Right, Software, UserRight
-)
+from app.models import Company, Unit
 
 from app.helpers import (
-    authenticate, Validator, HTTPResponse
+    authenticate, Validator, HTTPResponse, Database
 )
 
 
@@ -121,7 +119,7 @@ def get_company():
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_company():
-    """Update all the companies - Not implemented
+    """Update all the companies
 
     Returns:
         405 Method not allowed
@@ -138,18 +136,8 @@ def delete_company():
         500 Internal Server Error
     """
     try:
-        # delete all the tables (in case the Cascade does not work)
-        Company.query.delete()
-        Unit.query.delete()
-        Team.query.delete()
-        User.query.delete()
-        Right.query.delete()
-        Software.query.delete()
-        UserRight.query.delete()
-
-        # commit the change to the DB
+        Database.deleteAll()
         db.session.commit()
-
         return HTTPResponse.noContent()
 
     except Exception as e:
@@ -180,7 +168,7 @@ def get_single_company(company_id):
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
     if company is None:
-        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
+        return HTTPResponse.error404(company_id, 'Company')
 
     try:
         return  HTTPResponse.ok({
@@ -207,7 +195,7 @@ def put_single_company(company_id):
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
     if company is None:
-        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
+        return HTTPResponse.error404(company_id, 'Company')
 
     # update fields of interests
     try:
@@ -228,23 +216,16 @@ def put_single_company(company_id):
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
 def delete_single_company(company_id):
-    """Delete details for company_id
+    """Delete Company with company_id
 
     Returns:
         204 No Content
         404 Not found
         500 Internal Server Error
     """
-    # lookup for the company
-    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
-
     try:
-        db.session.delete(company)
-        db.session.commit()
-
-        return HTTPResponse.noContent()
+        # remove the company and all the associated elements
+        return Database.Delete.Company(company_id)
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
@@ -266,7 +247,7 @@ def post_single_company_units(company_id):
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
     if company is None:
-        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
+        return HTTPResponse.error404(company_id, 'Company')
 
     # prepare the new unit
     data = request.get_json() or {}
@@ -296,48 +277,11 @@ def get_single_company_units(company_id):
 
     Returns:
         200 OK
+        400 Bad Request
         404 Not found
         500 Internal Server Error
     """
-    # lookup for the company
-    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error(404, f"Could not find company with ID #{company_id}")
-
-    data = request.get_json() or {}
-
-    # check parameters
-    try:
-        Validator.data(data, ['unit_id'])
-    except KeyError as e:
-        return HTTPResponse.error(400, str(e))
-
-    try:
-        # lookup for this unit_id in this company
-        unit: Optional[Unit] = db.session.query(Unit) \
-                                .filter(Unit.company_id == company.id) \
-                                .filter(Unit.id == data['unit_id']) \
-                                .first()
-
-        # build the result dictionaries
-        teams = []
-        for team in unit.teams:
-            teams.append({
-                "name": team.name,
-                "id": team.id
-            })
-
-        result = {
-            "id": f"{unit.id}",
-            "name": unit.name,
-            "company_id": unit.company_id,
-            "teams": teams
-        }
-
-        return HTTPResponse.ok(result)
-
-    except Exception as e:
-        return HTTPResponse.error(500, str(e))
+    return HTTPResponse.ok("TO BE DONE")
 
 @blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
@@ -345,10 +289,9 @@ def put_single_company_units(company_id):
     """Update all units for company_id
 
     Returns:
-        204 No Content
-        404 Not found
-        500 Internal Server Error
+        405 Method not allowed
     """
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_3, methods=["DELETE"])
 @authenticate
@@ -357,6 +300,21 @@ def delete_single_company_units(company_id):
 
     Returns:
         204 No Content
+        400 Bad Request
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the company
+    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
+    if company is None:
+        return HTTPResponse.error404(company_id, 'Company')
+
+    try:
+        Database.Delete.Unit(None, company_id)
+        return HTTPResponse.noContent()
+
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
