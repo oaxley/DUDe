@@ -91,11 +91,13 @@ def get_company():
 
     try:
         # retrieve all the items between the limits
-        items: List[Company] = db.session.query(Company) \
-                                .order_by(Company.id) \
-                                .filter(Company.id >= params['offset']) \
-                                .limit(params['limit']) \
-                                .all()
+        items: List[Company] = (db.session
+            .query(Company)
+            .order_by(Company.id)
+            .filter(Company.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
 
         # build the result dictionary
         result = {
@@ -281,7 +283,53 @@ def get_single_company_units(company_id):
         404 Not found
         500 Internal Server Error
     """
-    return HTTPResponse.ok("TO BE DONE")
+    # lookup for the company
+    company: Optional[Company] = Company.query.filter_by(id=company_id).first()
+    if company is None:
+        return HTTPResponse.error404(company_id, 'Company')
+
+    # retrieve the parameters from the request (or set the default value)
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
+
+    try:
+        # retrieve all the items between the limits
+        items: List[Unit] = (db.session
+            .query(Unit)
+            .order_by(Unit.id)
+            .filter(Company.id == company.id)
+            .filter(Unit.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
+
+        # build the result dictionary
+        result = {
+            "offset": f"{params['offset']}",
+            "limit": f"{params['limit']}",
+            "units": []
+        }
+
+        for item in items:
+            result['units'].append({
+                "id": f"{item.id}",
+                "name": item.name,
+            })
+
+        # return the response
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
