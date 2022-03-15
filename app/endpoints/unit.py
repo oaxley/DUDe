@@ -322,7 +322,7 @@ def get_single_unit_teams(unit_id):
         items: List[Team] =(db.session
             .query(Team)
             .order_by(Team.id)
-            .filter(Unit.id == unit.id)
+            .filter(Team.unit_id == unit.id)
             .filter(Team.id >= params['offset'])
             .limit(params['limit'])
             .all()

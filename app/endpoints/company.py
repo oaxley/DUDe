@@ -306,7 +306,7 @@ def get_single_company_units(company_id):
         items: List[Unit] = (db.session
             .query(Unit)
             .order_by(Unit.id)
-            .filter(Company.id == company.id)
+            .filter(Unit.company_id == company.id)
             .filter(Unit.id >= params['offset'])
             .limit(params['limit'])
             .all()
