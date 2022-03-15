@@ -15,13 +15,17 @@
 from __future__ import annotations
 from typing import Any, List, Optional
 
-from flask import Blueprint, jsonify, request, url_for
+from flask import Blueprint, request, url_for
+from uuid import uuid4
 
 from app import app, db
-from app.models import Team, Unit
+from app.models import (
+    Team, Unit,
+    User, Right, Software
+)
 
 from app.helpers import (
-    authenticate, Validator, HTTPResponse
+    authenticate, Validator, HTTPResponse, Database
 )
 
 
@@ -62,7 +66,7 @@ def post_team():
     # check if the unit exists
     unit: Optional[Unit] = Unit.query.filter_by(id=data['unit_id']).first()
     if unit is None:
-        return HTTPResponse.error(404, f"Could not find unit with ID #{data['unit_id']}")
+        return HTTPResponse.error404(data['unit_id'], 'Unit')
 
     # check if the team exists already or not
     team: Optional[Team] = Team.query.filter_by(name=data['name'], unit_id=unit.id).first()
@@ -90,11 +94,49 @@ def get_team():
         400 Bad Request
         500 Internal Server Error
     """
+    # retrieve the parameters from the request (or set the default value)
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
+
+    try:
+        # retrieve all the items between the limits
+        items: List[Team] =(db.session
+            .query(Team)
+            .order_by(Team.id)
+            .filter(Team.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
+
+        result = {
+            "offset": params['offset'],
+            "limit": params['limit'],
+            "teams": [{
+                "id": f"{item.id}",
+                "name": item.name,
+                "unit_id": item.unit_id
+            } for item in items]
+        }
+
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
+
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_team():
-    """Update all the teams - Not Implemented
+    """Update all the teams
 
     Returns:
         405 Method not allowed
@@ -111,7 +153,16 @@ def delete_team():
         404 Not found
         500 Internal Server Error
     """
+    try:
+        # retrieve all the existing units
+        units: List[Unit] = Unit.query.order_by(Unit.id).all()
+        for unit in units:
+            Database.Delete.Team(None, unit.id)
 
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 #
 # routes for a single team
@@ -138,7 +189,7 @@ def get_single_team(team_id):
     # lookup for the team
     team: Optional[Team] = Team.query.filter_by(id=team_id).first()
     if team is None:
-        return HTTPResponse.error(404, f"Could not find team with ID #{team_id}")
+        return HTTPResponse.error404(team_id, 'Team')
 
     try:
         return HTTPResponse.ok({
@@ -160,6 +211,26 @@ def put_single_team(team_id):
         404 Not Found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    data = request.get_json() or {}
+    try:
+        for key in data:
+            if key not in [ 'name', 'unit_id' ]:
+                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+
+            setattr(team, key, data[key])
+
+        db.session.add(team)
+        db.session.commit()
+
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -171,6 +242,16 @@ def delete_single_team(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    try:
+        return Database.Delete.Team(team.id, None)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 
 #
@@ -182,11 +263,40 @@ def post_single_team_users(team_id):
     """Create a new user and associate it with the team
 
     Returns:
-        201 + Location of the new user
+        201 Location of the new user
         400 Bad Request
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    data = request.get_json() or {}
+
+    # check parameters
+    try:
+        Validator.data(data, [ 'name', 'email' ])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # check if the user already exists for this team
+    user: Optional[User] = User.query.filter_by(name=data['name'], email=data['email'], team_id=team.id).first()
+    if user:
+        return HTTPResponse.error(400, "User already exists for this Team.")
+
+    try:
+        user = User(name=data['name'], email=data['email'], team_id=team.id)
+
+        db.session.add(user)
+        db.session.commit()
+
+        return HTTPResponse.location(user.id, url_for('user.get_single_user', user_id=user.id))
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
+
 
 @blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
@@ -198,6 +308,51 @@ def get_single_team_users(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    # retrieve the parameters from the request (or set the default value)
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
+
+    try:
+        # retrieve all the items between the limits
+        items: List[User] = (db.session
+            .query(User)
+            .order_by(User.id)
+            .filter(User.team_id == team.id)
+            .filter(User.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
+
+        result = {
+            "offset": params['offset'],
+            "limit": params['limit'],
+            "users": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name,
+                    "email": item.email
+                } for item in items
+            ]
+        }
+
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
@@ -205,10 +360,9 @@ def put_single_team_users(team_id):
     """Update all users for a team
 
     Returns:
-        204 No Content
-        404 Not Found
-        500 Internal Server Error
+        405 Method not allowed
     """
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_3, methods=["DELETE"])
 @authenticate
@@ -220,7 +374,17 @@ def delete_single_team_users(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
 
+    try:
+        Database.Delete.User(None, team.id)
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 #
 # routes for rights
@@ -231,11 +395,40 @@ def post_single_team_rights(team_id):
     """Create a new right and associate it with the team
 
     Returns:
-        201 + Location of the new user
+        201 Location of the new user
         400 Bad Request
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    data = request.get_json() or {}
+
+    # check parameters
+    try:
+        Validator.data(data, [ 'name' ])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # check if the right already exists for this team
+    right: Optional[Right] = Right.query.filter_by(name=data['name'], team_id=team.id).first()
+    if right:
+        return HTTPResponse.error(400, "Right already exists for this Team.")
+
+    try:
+        right = Right(name=data['name'], team_id=team.id)
+
+        db.session.add(right)
+        db.session.commit()
+
+        return HTTPResponse.location(right.id, url_for('right.get_single_right', right_id=right.id))
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
+
 
 @blueprint.route(ROUTE_4, methods=["GET"])
 @authenticate
@@ -247,6 +440,51 @@ def get_single_team_rights(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    # retrieve the parameters from the request (or set the default value)
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
+
+    try:
+        # retrieve all the items between the limits
+        items: List[Right] = (db.session
+            .query(Right)
+            .order_by(Right.id)
+            .filter(Right.team_id == team.id)
+            .filter(Right.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
+
+        result = {
+            "offset": params['offset'],
+            "limit": params['limit'],
+            "rights": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name
+                } for item in items
+            ]
+        }
+
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
+
 
 @blueprint.route(ROUTE_4, methods=["PUT"])
 @authenticate
@@ -254,10 +492,9 @@ def put_single_team_rights(team_id):
     """Update all rights for a team
 
     Returns:
-        204 No Content
-        404 Not Found
-        500 Internal Server Error
+        405 Method not allowed
     """
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_4, methods=["DELETE"])
 @authenticate
@@ -269,7 +506,17 @@ def delete_single_team_rights(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
 
+    try:
+        Database.Delete.Right(None, team.id)
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 #
 # routes for software
@@ -285,6 +532,34 @@ def post_single_team_software(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    data = request.get_json() or {}
+
+    # check parameters
+    try:
+        Validator.data(data, [ 'name' ])
+    except KeyError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # check if the software already exists for this team
+    software: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=team.id).first()
+    if software:
+        return HTTPResponse.error(400, "Software already exists for this Team.")
+
+    try:
+        software = Software(name=data['name'], apikey=str(uuid4()), team_id=team.id)
+
+        db.session.add(software)
+        db.session.commit()
+
+        return HTTPResponse.location(software.id, url_for('software.get_single_software', software_id=software.id))
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_5, methods=["GET"])
 @authenticate
@@ -296,6 +571,50 @@ def get_single_team_software(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    # retrieve the parameters from the request (or set the default value)
+    try:
+        params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
+    except ValueError as e:
+        return HTTPResponse.error(400, str(e))
+
+    # ensure parameters remains positive
+    params['offset'] = abs(params['offset'])
+    params['limit'] = abs(params['limit'])
+
+    if params['limit'] > app.config['MAX_LIMIT_VALUE']:
+        params['limit'] = app.config['MAX_LIMIT_VALUE']
+
+    try:
+        # retrieve all the items between the limits
+        items: List[Software] = (db.session
+            .query(Software)
+            .order_by(Software.id)
+            .filter(Software.team_id == team.id)
+            .filter(Software.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
+
+        result = {
+            "offset": params['offset'],
+            "limit": params['limit'],
+            "software": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name
+                } for item in items
+            ]
+        }
+
+        return HTTPResponse.ok(result)
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
 
 @blueprint.route(ROUTE_5, methods=["PUT"])
 @authenticate
@@ -303,10 +622,9 @@ def put_single_team_software(team_id):
     """Update all software for a team
 
     Returns:
-        204 No Content
-        404 Not Found
-        500 Internal Server Error
+        405 Method not allowed
     """
+    return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_5, methods=["DELETE"])
 @authenticate
@@ -318,3 +636,15 @@ def delete_single_team_software(team_id):
         404 Not found
         500 Internal Server Error
     """
+    # lookup for the team
+    team: Optional[Team] = Team.query.filter_by(id=team_id).first()
+    if team is None:
+        return HTTPResponse.error404(team_id, 'Team')
+
+    try:
+        Database.Delete.Software(None, team.id)
+        return HTTPResponse.noContent()
+
+    except Exception as e:
+        return HTTPResponse.error(500, str(e))
+
