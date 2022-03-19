@@ -29,7 +29,7 @@ app.register_blueprint(endpoints.BPTeam)
 app.register_blueprint(endpoints.BPUser)
 app.register_blueprint(endpoints.BPRight)
 app.register_blueprint(endpoints.BPSoftware)
-
+app.register_blueprint(endpoints.BPUserRight)
 
 #
 #----- Generic routes
