@@ -17,6 +17,7 @@ from functools import wraps
 from flask import request, abort
 from app import app
 
+from .http_response import HTTPResponse
 
 #----- Functions
 
@@ -25,12 +26,9 @@ def authenticate(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         # look for the X-API-Token header in the request
-        try:
-            token = request.headers['X-API-Token']
-            if token != app.config['DUDE_SECRET_KEY']:
-                raise Exception()
-        except Exception:
-            abort(403)
+        token = request.headers.get('X-API-Token', '')
+        if token != app.config['DUDE_SECRET_KEY']:
+            return HTTPResponse.error(403, "API token is missing or invalid.")
 
         # call the function
         return fn(*args, **kwargs)
