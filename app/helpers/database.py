@@ -269,7 +269,7 @@ class Database:
                 db.session.commit()
 
         @staticmethod
-        def UserRight(usrg_id: Optional[int], user_id: Optional[int], right_id: Optional[int]) -> None:
+        def UserRight(usrg_id: Optional[int] = None, user_id: Optional[int] = None, right_id: Optional[int] = None) -> None:
             """Delete UserRight record either from a user_id or right_id
 
             Args:
@@ -290,6 +290,10 @@ class Database:
                 if usrg:
                     db.session.delete(usrg)
                     db.session.commit()
+
+                    return HTTPResponse.noContent()
+                else:
+                    return HTTPResponse.error404(usrg_id, 'UserRight')
 
             if user_id:
                 users: List[UserRight] = UserRight.query.filter(UserRight.user_id == user_id).all()
