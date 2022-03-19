@@ -103,13 +103,13 @@ def get_company():
         result = {
             "offset": f"{params['offset']}",
             "limit": f"{params['limit']}",
-            "companies": []
+            "companies": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name
+                } for item in items
+            ]
         }
-        for item in items:
-            result['companies'].append({
-                "id": f"{item.id}",
-                "name": item.name,
-            })
 
         # return the response
         return HTTPResponse.ok(result)
@@ -174,7 +174,7 @@ def get_single_company(company_id):
 
     try:
         return  HTTPResponse.ok({
-            'id': company.id,
+            'id': f"{company.id}",
             'name': company.name
         })
 
@@ -316,14 +316,13 @@ def get_single_company_units(company_id):
         result = {
             "offset": f"{params['offset']}",
             "limit": f"{params['limit']}",
-            "units": []
+            "units": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name
+                } for item in items
+            ]
         }
-
-        for item in items:
-            result['units'].append({
-                "id": f"{item.id}",
-                "name": item.name,
-            })
 
         # return the response
         return HTTPResponse.ok(result)
