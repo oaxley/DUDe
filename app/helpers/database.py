@@ -216,7 +216,7 @@ class Database:
             if user_id:
                 user: User = User.query.filter(User.id == user_id).first()
                 if user:
-                    Database.Delete.UserRight(user.id, None)
+                    Database.Delete.UserRight(user_id=user.id)
                     db.session.delete(user)
                     db.session.commit()
 
@@ -228,7 +228,7 @@ class Database:
             if team_id:
                 users: List[User] = User.query.filter(User.team_id == team_id).all()
                 for user in users:
-                    Database.Delete.UserRight(user.id, None)
+                    Database.Delete.UserRight(user_id=user.id)
                     db.session.delete(user)
                 db.session.commit()
 
@@ -252,7 +252,7 @@ class Database:
             if right_id:
                 right: Right = Right.query.filter(Right.id == right_id).first()
                 if right:
-                    Database.Delete.UserRight(None, right_id)
+                    Database.Delete.UserRight(right_id=right_id)
                     db.session.delete(right)
                     db.session.commit()
 
@@ -264,24 +264,32 @@ class Database:
             if team_id:
                 rights: List[Right] = Right.query.filter(Right.team_id == team_id).all()
                 for right in rights:
-                    Database.Delete.UserRight(None, right.id)
+                    Database.Delete.UserRight(right_id=right.id)
                     db.session.delete(right)
                 db.session.commit()
 
         @staticmethod
-        def UserRight(user_id: Optional[int], right_id: Optional[int]) -> None:
+        def UserRight(usrg_id: Optional[int], user_id: Optional[int], right_id: Optional[int]) -> None:
             """Delete UserRight record either from a user_id or right_id
 
             Args:
+                usrg_id : ID of the UserRight to delete
                 user_id : ID of the user for which the relation should be removed
                 right_id: ID of the right for which the relation should be removed
 
             Raises:
                 Exception is unit_id/company_id are None
             """
+
             # nothing to do
-            if (user_id is None) and (right_id is None):
-                raise Exception("Both user_id and right_id are None in Delete::UserRight.")
+            if (usrg_id is None) and (user_id is None) and (right_id is None):
+                raise Exception("All usrg_id, user_id and right_id are None in Delete::UserRight.")
+
+            if usrg_id:
+                usrg: UserRight = UserRight.query.filter(UserRight.id == usrg_id).first()
+                if usrg:
+                    db.session.delete(usrg)
+                    db.session.commit()
 
             if user_id:
                 users: List[UserRight] = UserRight.query.filter(UserRight.user_id == user_id).all()
