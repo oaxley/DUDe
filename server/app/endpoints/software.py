@@ -13,7 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from uuid import uuid4
 from flask import Blueprint, request, url_for
@@ -137,6 +137,9 @@ def put_software():
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
@@ -171,6 +174,9 @@ def post_single_software(software_id):
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 

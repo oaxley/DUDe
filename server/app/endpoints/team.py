@@ -143,6 +143,9 @@ def put_team():
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
@@ -177,6 +180,9 @@ def post_single_team(team_id):
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_2, methods=["GET"])
@@ -364,6 +370,9 @@ def put_single_team_users(team_id):
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_3, methods=["DELETE"])
@@ -496,6 +505,9 @@ def put_single_team_rights(team_id):
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_4, methods=["DELETE"])
@@ -626,6 +638,9 @@ def put_single_team_software(team_id):
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_5, methods=["DELETE"])

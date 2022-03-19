@@ -138,6 +138,9 @@ def put_user():
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
@@ -172,6 +175,9 @@ def post_single_user(user_id):
     Returns:
         405 Method not allowed
     """
+    # this line ensures flask does not return errors if data is not purged
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        request.get_json()
     return HTTPResponse.notAllowed()
 
 @blueprint.route(ROUTE_2, methods=["GET"])
