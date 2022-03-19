@@ -16,13 +16,13 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 from uuid import uuid4
-from flask import Blueprint, jsonify, request, url_for
+from flask import Blueprint, request, url_for
 
 from app import app, db
 from app.models import Team, Software
 
 from app.helpers import (
-    authenticate, Validator, HTTPResponse
+    authenticate, Validator, HTTPResponse, Database
 )
 
 
@@ -59,12 +59,12 @@ def post_software():
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
     if team is None:
-        return HTTPResponse.error(404, f"Could not find team with ID #{data['team_id']}.")
+        return HTTPResponse.error404(data['team_id'], 'Team')
 
     # check if the software exists already or not
     software: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=team.id).first()
     if software is not None:
-        return HTTPResponse.error(400, "Software already existing for this team.")
+        return HTTPResponse.error(400, "Software already exists for this team.")
 
     try:
         software = Software(name=data['name'], apikey=str(uuid4()), team_id=team.id)
@@ -103,27 +103,27 @@ def get_software():
 
     try:
         # retrieve all the items between the limits
-        items: List[Software] = db.session.query(Software) \
-                                .order_by(Software.id) \
-                                .filter(Software.id >= params['offset']) \
-                                .limit(params['limit']) \
-                                .all()
+        items: List[Software] =(db.session
+            .query(Software)
+            .order_by(Software.id)
+            .filter(Software.id >= params['offset'])
+            .limit(params['limit'])
+            .all()
+        )
 
-        # build the result dictionary
         result = {
-            "offset": f"{params['offset']}",
-            "limit": f"{params['limit']}",
-            "software": []
+            "offset": params['offset'],
+            "limit": params['limit'],
+            "software": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name,
+                    "apikey": item.apikey,
+                    "team_id": item.team_id
+                } for item in items
+            ]
         }
-        for item in items:
-            result['software'].append({
-                "id": f"{item.id}",
-                "name": item.name,
-                "apikey": item.apikey,
-                "team_id": f"{item.team_id}"
-            })
 
-        # return the response
         return HTTPResponse.ok(result)
 
     except Exception as e:
@@ -149,9 +149,10 @@ def delete_software():
         500 Internal Server Error
     """
     try:
-        # delete all the rows in the table
-        Software.query.delete()
-        db.session.commit()
+        # retrieve all the existing teams
+        teams: List[Team] = Team.query.order_by(Team.id).all()
+        for team in teams:
+            Database.Delete.Software(None, team.id)
 
         return HTTPResponse.noContent()
 
@@ -185,7 +186,7 @@ def get_single_software(software_id):
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
     if software is None:
-        return HTTPResponse.error(404, f"Could not find software with ID #{software_id}.")
+        return HTTPResponse.error404(software_id, 'Software')
 
     try:
         return HTTPResponse.ok({
@@ -215,7 +216,7 @@ def put_single_software(software_id):
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
     if software is None:
-        return HTTPResponse.error(404, f"Could not find software with ID #{software_id}.")
+        return HTTPResponse.error404(software_id, 'Software')
 
     # update fields of interests
     try:
@@ -247,13 +248,10 @@ def delete_single_software(software_id):
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
     if software is None:
-        return HTTPResponse.error(404, f"Could not find software with ID #{software_id}.")
+        return HTTPResponse.error404(software_id, 'Software')
 
     try:
-        db.session.delete(software)
-        db.session.commit()
-
-        return HTTPResponse.noContent()
+        return Database.Delete.Software(software.id, None)
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
