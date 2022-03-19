@@ -13,7 +13,7 @@
 
 #----- Imports
 from __future__ import annotations
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from flask import Blueprint, request, url_for
 from uuid import uuid4
@@ -120,11 +120,13 @@ def get_team():
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
-            "teams": [{
-                "id": f"{item.id}",
-                "name": item.name,
-                "unit_id": item.unit_id
-            } for item in items]
+            "teams": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name,
+                    "unit_id": f"{item.unit_id}"
+                } for item in items
+            ]
         }
 
         return HTTPResponse.ok(result)
@@ -193,9 +195,9 @@ def get_single_team(team_id):
 
     try:
         return HTTPResponse.ok({
-            'id': team.id,
+            'id': f"{team.id}",
             'name': team.name,
-            'unit_id': team.unit_id
+            'unit_id': f"{team.unit_id}"
         })
 
     except Exception as e:

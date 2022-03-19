@@ -13,14 +13,12 @@
 
 #----- Imports
 from __future__ import annotations
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from flask import Blueprint, request, url_for
 
 from app import app, db
-from app.models import (
-    Team, User, Right, UserRight
-)
+from app.models import Team, User
 
 from app.helpers import (
     authenticate, Validator, HTTPResponse, Database
@@ -116,12 +114,14 @@ def get_user():
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
-            "users": [{
-                "id": f"{item.id}",
-                "name": item.name,
-                "email": item.email,
-                "team_id": item.team_id
-            } for item in items]
+            "users": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name,
+                    "email": item.email,
+                    "team_id": f"{item.team_id}"
+                } for item in items
+            ]
         }
 
         return HTTPResponse.ok(result)
@@ -190,10 +190,10 @@ def get_single_user(user_id):
 
     try:
         return HTTPResponse.ok({
-            'id': user.id,
+            'id': f"{user.id}",
             'name': user.name,
             'email': user.email,
-            'team_id': user.team_id
+            'team_id': f"{user.team_id}"
         })
 
     except Exception as e:

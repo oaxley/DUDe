@@ -119,7 +119,7 @@ def get_software():
                     "id": f"{item.id}",
                     "name": item.name,
                     "apikey": item.apikey,
-                    "team_id": item.team_id
+                    "team_id": f"{item.team_id}"
                 } for item in items
             ]
         }

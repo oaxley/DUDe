@@ -124,8 +124,8 @@ def get_userright():
             "users": [
                 {
                     "id": f"{item.id}",
-                    "user_id": item.user_id,
-                    "right_id": item.right_id
+                    "user_id": f"{item.user_id}",
+                    "right_id": f"{item.right_id}"
                 } for item in items
             ]
         }
@@ -197,9 +197,9 @@ def get_single_userright(user_right_id):
 
     try:
         return HTTPResponse.ok({
-            'id': usrg.id,
-            'user_id': usrg.user_id,
-            'right_id': usrg.right_id
+            'id': f"{usrg.id}",
+            'user_id': f"{usrg.user_id}",
+            'right_id': f"{usrg.right_id}"
         })
 
     except Exception as e:

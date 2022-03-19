@@ -13,14 +13,12 @@
 
 #----- Imports
 from __future__ import annotations
-from typing import Any, List, Optional
+from typing import List, Optional
 
-from flask import Blueprint, jsonify, request, url_for
+from flask import Blueprint, request, url_for
 
 from app import app, db
-from app.models import (
-    Team, User, Right, UserRight
-)
+from app.models import Team, Right
 
 from app.helpers import (
     authenticate, Validator, HTTPResponse, Database
@@ -115,11 +113,13 @@ def get_right():
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
-            "users": [{
-                "id": f"{item.id}",
-                "name": item.name,
-                "team_id": item.team_id
-            } for item in items]
+            "users": [
+                {
+                    "id": f"{item.id}",
+                    "name": item.name,
+                    "team_id": f"{item.team_id}"
+                } for item in items
+            ]
         }
 
         return HTTPResponse.ok(result)
@@ -187,9 +187,9 @@ def get_single_right(right_id):
 
     try:
         return HTTPResponse.ok({
-            'id': right.id,
+            'id': f"{right.id}",
             'name': right.name,
-            'team_id': right.team_id
+            'team_id': f"{right.team_id}"
         })
 
     except Exception as e:
