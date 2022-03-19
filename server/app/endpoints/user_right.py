@@ -50,7 +50,10 @@ def post_userright():
         404 Not Found
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -226,7 +229,11 @@ def put_single_userright(user_right_id):
     if not usrg:
         return HTTPResponse.error404(user_right_id, 'UserRight')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
+
     try:
         for key in data:
             if key not in [ 'user_id', 'right_id' ]:

@@ -49,7 +49,10 @@ def post_user():
         404 Not Found
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -220,7 +223,11 @@ def put_single_user(user_id):
     if user is None:
         return HTTPResponse.error404(user_id, 'User')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
+
     try:
         for key in data:
             if key not in [ 'name', 'email', 'team_id' ]:

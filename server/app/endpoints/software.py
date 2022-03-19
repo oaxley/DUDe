@@ -48,7 +48,10 @@ def post_software():
         400 Bad Request
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -217,7 +220,10 @@ def put_single_software(software_id):
         404 Not Found
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()

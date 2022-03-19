@@ -48,7 +48,10 @@ def post_company():
         500 Internal Server Error
         400 Bad Request
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -198,7 +201,10 @@ def put_single_company(company_id):
         404 Not found
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
@@ -252,13 +258,17 @@ def post_single_company_units(company_id):
         404 Not found
         500 Internal Server Error
     """
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
+
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
     if company is None:
         return HTTPResponse.error404(company_id, 'Company')
 
     # prepare the new unit
-    data = request.get_json() or {}
     if 'name' not in data:
         return HTTPResponse.error(400, "Field 'name' is missing from input data.")
 

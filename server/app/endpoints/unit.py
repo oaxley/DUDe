@@ -49,7 +49,10 @@ def post_unit():
         404 Not found
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -216,7 +219,11 @@ def put_single_unit(unit_id):
     if unit is None:
         return HTTPResponse.error404(unit_id, 'Unit')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
+
     try:
         for key in data:
             if key not in [ 'name', 'company_id' ]:
@@ -271,7 +278,10 @@ def post_single_unit_teams(unit_id):
     if unit is None:
         return HTTPResponse.error404(unit_id, 'Unit')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:

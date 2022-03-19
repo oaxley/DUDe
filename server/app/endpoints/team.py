@@ -55,7 +55,10 @@ def post_team():
         404 Not Found
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -224,7 +227,11 @@ def put_single_team(team_id):
     if team is None:
         return HTTPResponse.error404(team_id, 'Team')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
+
     try:
         for key in data:
             if key not in [ 'name', 'unit_id' ]:
@@ -281,7 +288,10 @@ def post_single_team_users(team_id):
     if team is None:
         return HTTPResponse.error404(team_id, 'Team')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -416,7 +426,10 @@ def post_single_team_rights(team_id):
     if team is None:
         return HTTPResponse.error404(team_id, 'Team')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -551,7 +564,10 @@ def post_single_team_software(team_id):
     if team is None:
         return HTTPResponse.error404(team_id, 'Team')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:

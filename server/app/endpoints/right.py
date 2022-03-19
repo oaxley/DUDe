@@ -48,7 +48,10 @@ def post_right():
         400 Bad Request
         500 Internal Server Error
     """
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
 
     # check parameters
     try:
@@ -216,7 +219,11 @@ def put_single_right(right_id):
     if right is None:
         return HTTPResponse.error404(right_id, 'Right')
 
-    data = request.get_json() or {}
+    if int(request.headers.get('Content-Length', 0)) > 0:
+        data = request.get_json()
+    else:
+        data = {}
+
     try:
         for key in data:
             if key not in [ 'name', 'team_id' ]:
