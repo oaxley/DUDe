@@ -137,7 +137,6 @@ def get_team():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_team():
@@ -171,6 +170,7 @@ def delete_team():
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for a single team
@@ -236,6 +236,12 @@ def put_single_team(team_id):
         for key in data:
             if key not in [ 'name', 'unit_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
+
+            # ensure unit_id exists
+            if key == 'unit_id':
+                unit: Optional[Unit] = Unit.query.filter_by(id=data[key]).first()
+                if unit is None:
+                    return HTTPResponse.error404(data[key], 'unit')
 
             setattr(team, key, data[key])
 
@@ -314,7 +320,6 @@ def post_single_team_users(team_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
-
 
 @blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
@@ -407,6 +412,7 @@ def delete_single_team_users(team_id):
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
+
 #
 # routes for rights
 #
@@ -452,7 +458,6 @@ def post_single_team_rights(team_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
-
 
 @blueprint.route(ROUTE_4, methods=["GET"])
 @authenticate
@@ -509,7 +514,6 @@ def get_single_team_rights(team_id):
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_4, methods=["PUT"])
 @authenticate
 def put_single_team_rights(team_id):
@@ -544,6 +548,7 @@ def delete_single_team_rights(team_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for software
@@ -680,4 +685,3 @@ def delete_single_team_software(team_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
-

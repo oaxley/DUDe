@@ -138,7 +138,6 @@ def get_userright():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_userright():
@@ -172,6 +171,7 @@ def delete_userright():
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for a single user-right association
@@ -238,6 +238,18 @@ def put_single_userright(user_right_id):
         for key in data:
             if key not in [ 'user_id', 'right_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
+
+            # ensure right_id exists
+            if key == 'right_id':
+                right: Optional[Right] = Right.query.filter_by(id=data[key]).first()
+                if right is None:
+                    return HTTPResponse.error404(data[key], 'Right')
+
+            # ensure user_id exists
+            if key == 'user_id':
+                user: Optional[User] = User.query.filter_by(id=data[key]).first()
+                if user is None:
+                    return HTTPResponse.error404(data[key], 'User')
 
             setattr(usrg, key, data[key])
 

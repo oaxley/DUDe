@@ -120,7 +120,6 @@ def get_company():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_company():
@@ -150,6 +149,7 @@ def delete_company():
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for a single company
@@ -243,6 +243,7 @@ def delete_single_company(company_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for units

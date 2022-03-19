@@ -164,6 +164,7 @@ def delete_right():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
+
 #
 # routes for a single right
 #
@@ -229,6 +230,12 @@ def put_single_right(right_id):
             if key not in [ 'name', 'team_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
 
+            # ensure team_id exists
+            if key == 'team_id':
+                team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
+                if team is None:
+                    return HTTPResponse.error404(data[key], 'Team')
+
             setattr(right, key, data[key])
 
         db.session.add(right)
@@ -238,7 +245,6 @@ def put_single_right(right_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
-
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate

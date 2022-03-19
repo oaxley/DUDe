@@ -80,7 +80,6 @@ def post_software():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
 def get_software():
@@ -182,7 +181,6 @@ def post_single_software(software_id):
         request.get_json()
     return HTTPResponse.notAllowed()
 
-
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_software(software_id):
     """Retrieve details for a software
@@ -207,7 +205,6 @@ def get_single_software(software_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
-
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -236,6 +233,12 @@ def put_single_software(software_id):
             if key not in [ 'name', 'team_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
 
+            # ensure team_id exists
+            if key == 'team_id':
+                team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
+                if team is None:
+                    return HTTPResponse.error404(data[key], 'Team')
+
             setattr(software, key, data[key])
 
         db.session.add(software)
@@ -245,7 +248,6 @@ def put_single_software(software_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
-
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate

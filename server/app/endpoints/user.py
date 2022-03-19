@@ -132,7 +132,6 @@ def get_user():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
 def put_user():
@@ -166,6 +165,7 @@ def delete_user():
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for a single user
@@ -232,6 +232,12 @@ def put_single_user(user_id):
         for key in data:
             if key not in [ 'name', 'email', 'team_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
+
+            # ensure team_id exists
+            if key == 'team_id':
+                team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
+                if team is None:
+                    return HTTPResponse.error404(data[key], 'Team')
 
             setattr(user, key, data[key])
 

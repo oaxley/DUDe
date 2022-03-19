@@ -163,6 +163,7 @@ def delete_unit():
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
+
 #
 # routes for a single unit
 #
@@ -203,7 +204,6 @@ def get_single_unit(unit_id):
     except Exception as e:
         return HTTPResponse.error(500, str(e))
 
-
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
 def put_single_unit(unit_id):
@@ -228,6 +228,12 @@ def put_single_unit(unit_id):
         for key in data:
             if key not in [ 'name', 'company_id' ]:
                 return HTTPResponse.error(400, f"Could not update field '{key}'.")
+
+            # ensure company_id exists
+            if key == 'company_id':
+                company: Optional[Company] = Company.query.filter_by(id=data[key]).first()
+                if company is None:
+                    return HTTPResponse.error404(data[key], 'Company')
 
             setattr(unit, key, data[key])
 
@@ -259,6 +265,7 @@ def delete_single_unit(unit_id):
 
     except Exception as e:
         return HTTPResponse.error(500, str(e))
+
 
 #
 # routes for teams
