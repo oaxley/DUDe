@@ -106,6 +106,7 @@ def get_company():
         result = {
             "offset": f"{params['offset']}",
             "limit": f"{params['limit']}",
+            "count": f"{len(items)}",
             "companies": [
                 {
                     "id": f"{item.id}",
@@ -333,6 +334,7 @@ def get_single_company_units(company_id):
         result = {
             "offset": f"{params['offset']}",
             "limit": f"{params['limit']}",
+            "count": f"{len(items)}",
             "units": [
                 {
                     "id": f"{item.id}",

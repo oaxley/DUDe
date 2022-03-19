@@ -124,6 +124,7 @@ def get_userright():
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "users": [
                 {
                     "id": f"{item.id}",

@@ -116,6 +116,7 @@ def get_software():
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "software": [
                 {
                     "id": f"{item.id}",

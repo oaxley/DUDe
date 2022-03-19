@@ -117,6 +117,7 @@ def get_unit():
         result = {
             'offset': params['offset'],
             'limit': params['limit'],
+            "count": f"{len(items)}",
             'units': [
                 {
                 'id': f"{item.id}",
@@ -353,6 +354,7 @@ def get_single_unit_teams(unit_id):
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "teams": [
                 {
                     "id": f"{item.id}",

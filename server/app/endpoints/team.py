@@ -123,6 +123,7 @@ def get_team():
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "teams": [
                 {
                     "id": f"{item.id}",
@@ -363,6 +364,7 @@ def get_single_team_users(team_id):
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "users": [
                 {
                     "id": f"{item.id}",
@@ -501,6 +503,7 @@ def get_single_team_rights(team_id):
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "rights": [
                 {
                     "id": f"{item.id}",
@@ -638,6 +641,7 @@ def get_single_team_software(team_id):
         result = {
             "offset": params['offset'],
             "limit": params['limit'],
+            "count": f"{len(items)}",
             "software": [
                 {
                     "id": f"{item.id}",
