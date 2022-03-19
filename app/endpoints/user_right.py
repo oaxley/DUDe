@@ -68,6 +68,11 @@ def post_userright():
     if not right:
         return HTTPResponse.error404(data['right_id'], 'Right')
 
+    # check if the association already exists
+    usrg: Optional[UserRight] = UserRight.query.filter_by(user_id=user.id, right_id=right.id).first()
+    if usrg:
+        return HTTPResponse.error(400, "UserRight already exists for this User / Right.")
+
     try:
 
         user_right = UserRight(user_id=user.id, right_id=right.id)
@@ -152,15 +157,10 @@ def delete_userright():
         500 Internal Server Error
     """
     try:
-        # retrieve all the users
-        users: List[User] = User.query.order_by(User.id).all()
-        for user in users:
-            Database.Delete.UserRight(user.id, None)
-
-        # retrieve all the rights
-        rights: List[Right] = Right.query.order_by(Right.id).all()
-        for right in rights:
-            Database.Delete.UserRight(None, right.id)
+        # retrieve all the items
+        items: List[UserRight] = UserRight.query.order_by(UserRight.id).all()
+        for item in items:
+            Database.Delete.UserRight(usrg_id=item.id)
 
         return HTTPResponse.noContent()
 
