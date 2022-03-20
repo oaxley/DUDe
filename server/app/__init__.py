@@ -26,10 +26,12 @@ app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 
-
+# import localized messages
+from app.localization import getMessage
 
 # print the api-key for administrative tasks
-logging.info(f"API-KEY for admin is [{app.config['DUDE_SECRET_KEY']}]")
+if app.config['DEBUG'] == True:
+    app.logger.info(getMessage(0x0001, apikey=app.config['DUDE_SECRET_KEY']))
 
 # import routes at the last moment to avoid cyclic imports
 from app import routes
