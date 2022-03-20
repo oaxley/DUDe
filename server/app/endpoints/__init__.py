@@ -8,7 +8,11 @@ from .right      import blueprint as BPRight
 from .software   import blueprint as BPSoftware
 from .user_right import blueprint as BPUserRight
 
+from .auth import blueprint as BPAuth
+from .validate import blueprint as BPValidate
+
 routes = [
     BPCompany, BPUnit, BPTeam, BPUser,
     BPRight, BPSoftware, BPUserRight,
+    BPAuth, BPValidate
 ]
