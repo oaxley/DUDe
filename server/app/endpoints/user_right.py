@@ -59,22 +59,22 @@ def post_userright():
     try:
         Validator.data(data, [ 'user_id', 'right_id' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     # check if the user exists
     user: Optional[User] = User.query.filter_by(id=data['user_id']).first()
     if not user:
-        return HTTPResponse.error404(data['user_id'], 'User')
+        return HTTPResponse.error(0x4041, rid=data['user_id'], table='User')
 
     # check if the right exists
     right: Optional[Right] = Right.query.filter_by(id=data['right_id']).first()
     if not right:
-        return HTTPResponse.error404(data['right_id'], 'Right')
+        return HTTPResponse.error(0x4041, rid=data['right_id'], table='Right')
 
     # check if the association already exists
     usrg: Optional[UserRight] = UserRight.query.filter_by(user_id=user.id, right_id=right.id).first()
     if usrg:
-        return HTTPResponse.error(400, "UserRight already exists for this User / Right.")
+        return HTTPResponse.error(0x4002, child="UserRight", parent="User/Right")
 
     try:
 
@@ -86,7 +86,7 @@ def post_userright():
         return HTTPResponse.location(user_right.id, url_for('user_right.get_single_userright', user_right_id=user_right.id))
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -102,7 +102,7 @@ def get_userright():
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -137,7 +137,7 @@ def get_userright():
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -150,7 +150,7 @@ def put_userright():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST, GET, DELETE")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -171,7 +171,7 @@ def delete_userright():
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 #
@@ -188,7 +188,7 @@ def post_single_userright(user_right_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("PUT, GET, DELETE")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 @authenticate
@@ -203,7 +203,7 @@ def get_single_userright(user_right_id):
     # lookup the association
     usrg: Optional[UserRight] = UserRight.query.filter_by(id=user_right_id).first()
     if not usrg:
-        return HTTPResponse.error404(user_right_id, 'UserRight')
+        return HTTPResponse.error(0x4041, rid=user_right_id, table='UserRight')
 
     try:
         return HTTPResponse.ok({
@@ -213,7 +213,7 @@ def get_single_userright(user_right_id):
         })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -228,7 +228,7 @@ def put_single_userright(user_right_id):
     # lookup the association
     usrg: Optional[UserRight] = UserRight.query.filter_by(id=user_right_id).first()
     if not usrg:
-        return HTTPResponse.error404(user_right_id, 'UserRight')
+        return HTTPResponse.error(0x4041, rid=user_right_id, table='UserRight')
 
     if int(request.headers.get('Content-Length', 0)) > 0:
         data = request.get_json()
@@ -238,19 +238,19 @@ def put_single_userright(user_right_id):
     try:
         for key in data:
             if key not in [ 'user_id', 'right_id' ]:
-                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+                return HTTPResponse.error(0x4005, name=key)
 
             # ensure right_id exists
             if key == 'right_id':
                 right: Optional[Right] = Right.query.filter_by(id=data[key]).first()
-                if right is None:
-                    return HTTPResponse.error404(data[key], 'Right')
+                if not right:
+                    return HTTPResponse.error(0x4041, rid=data[key], table='Right')
 
             # ensure user_id exists
             if key == 'user_id':
                 user: Optional[User] = User.query.filter_by(id=data[key]).first()
-                if user is None:
-                    return HTTPResponse.error404(data[key], 'User')
+                if not user:
+                    return HTTPResponse.error(0x4041, rid=data[key], table='User')
 
             setattr(usrg, key, data[key])
 
@@ -260,7 +260,7 @@ def put_single_userright(user_right_id):
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -275,10 +275,10 @@ def delete_single_userright(user_right_id):
     # lookup the association
     usrg: Optional[UserRight] = UserRight.query.filter_by(id=user_right_id).first()
     if not usrg:
-        return HTTPResponse.error404(user_right_id, 'UserRight')
+        return HTTPResponse.error(0x4041, rid=user_right_id, table='UserRight')
 
     try:
         return Database.Delete.UserRight(usrg_id=usrg.id)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
