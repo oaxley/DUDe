@@ -48,8 +48,8 @@ def post_single_team_software(team_id):
     """
     # lookup for the team
     team: Optional[Team] = Team.query.filter_by(id=team_id).first()
-    if team is None:
-        return HTTPResponse.error404(team_id, 'Team')
+    if not team:
+        return HTTPResponse.error(0x4041, rid=team_id, table='Team')
 
     if int(request.headers.get('Content-Length', 0)) > 0:
         data = request.get_json()
@@ -60,12 +60,12 @@ def post_single_team_software(team_id):
     try:
         Validator.data(data, [ 'name' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     # check if the software already exists for this team
     software: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=team.id).first()
     if software:
-        return HTTPResponse.error(400, "Software already exists for this Team.")
+        return HTTPResponse.error(0x4002, child='Software', parent='Team')
 
     try:
         software = Software(name=data['name'], apikey=str(uuid4()), team_id=team.id)
@@ -76,7 +76,7 @@ def post_single_team_software(team_id):
         return HTTPResponse.location(software.id, url_for('software.get_single_software', software_id=software.id))
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE, methods=["GET"])
 @authenticate
@@ -90,14 +90,14 @@ def get_single_team_software(team_id):
     """
     # lookup for the team
     team: Optional[Team] = Team.query.filter_by(id=team_id).first()
-    if team is None:
-        return HTTPResponse.error404(team_id, 'Team')
+    if not team:
+        return HTTPResponse.error(0x4041, rid=team_id, table='Team')
 
     # retrieve the parameters from the request (or set the default value)
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -132,7 +132,7 @@ def get_single_team_software(team_id):
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE, methods=["PUT"])
 @authenticate
@@ -145,7 +145,7 @@ def put_single_team_software(team_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST, GET, DELETE")
 
 @blueprint.route(ROUTE, methods=["DELETE"])
 @authenticate
@@ -159,12 +159,12 @@ def delete_single_team_software(team_id):
     """
     # lookup for the team
     team: Optional[Team] = Team.query.filter_by(id=team_id).first()
-    if team is None:
-        return HTTPResponse.error404(team_id, 'Team')
+    if not team:
+        return HTTPResponse.error(0x4041, rid=team_id, table='Team')
 
     try:
         Database.Delete.Software(None, team.id)
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
