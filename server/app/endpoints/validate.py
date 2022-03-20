@@ -47,7 +47,8 @@ def post_validate():
     Returns:
         200 OK
         400 Bad Request
-        401 Unauthorized
+        401 Unauthorized/Unauthenticated
+        403 Forbidden
         500 Internal Server Error
     """
     # retrieve the data if any
@@ -60,7 +61,7 @@ def post_validate():
     try:
         Validator.data(data, [ 'token', 'email', 'right' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     try:
         # retrieve the data contained in the token
@@ -69,27 +70,27 @@ def post_validate():
         # validate expiry date
         now = datetime.datetime.utcnow().timestamp()
         if token['exp'] < now:
-            return HTTPResponse.error(401, "Token has expired.")
+            return HTTPResponse.error(0x4010)
 
         # retrieve the user
         user: Optional[User] = User.query.filter_by(email=data['email'], team_id=token['team_id']).first()
         if not user:
-            return HTTPResponse.error(400, f"Invalid user email in the request.")
+            return HTTPResponse.error(0x4011)
 
         # retrieve the right
         right: Optional[Right] = Right.query.filter_by(name=data['right'], team_id=token['team_id']).first()
         if not right:
-            return HTTPResponse.error(400, f"Invalid right name in the request.")
+            return HTTPResponse.error(0x4011)
 
         # lookup for the association
         user_right: Optional[UserRight] = UserRight.query.filter_by(user_id=user.id, right_id=right.id).first()
         if not user_right:
-            return HTTPResponse.error(403, "User is not authorized")
+            return HTTPResponse.error(0x4030)
         else:
             return HTTPResponse.ok({ "message": "User is authorized" })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 @blueprint.route("", methods=["GET", "PUT", "DELETE"])
@@ -102,4 +103,4 @@ def default_validate():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST")
