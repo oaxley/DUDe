@@ -57,11 +57,11 @@ def post_company():
     try:
         Validator.data(data, ['name'])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     company: Optional[Company] = Company.query.filter_by(name=data['name']).first()
-    if company is not None:
-        return HTTPResponse.error(400, "Company already exist.")
+    if company:
+        return HTTPResponse.error(0x4003, name='Company')
 
     try:
         company = Company(name=data['name'])
@@ -73,7 +73,7 @@ def post_company():
         return resp
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -83,7 +83,7 @@ def get_company():
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -119,7 +119,7 @@ def get_company():
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -132,7 +132,7 @@ def put_company():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed(allowed="POST, GET, DELETE")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -149,7 +149,7 @@ def delete_company():
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 #
@@ -166,7 +166,7 @@ def post_single_company(company_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("GET, PUT, DELETE")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_company(company_id):
@@ -179,8 +179,8 @@ def get_single_company(company_id):
     """
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error404(company_id, 'Company')
+    if not company:
+        return HTTPResponse.error(0x4041, table='Company', rid=company_id)
 
     try:
         return  HTTPResponse.ok({
@@ -189,7 +189,7 @@ def get_single_company(company_id):
         })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -209,14 +209,14 @@ def put_single_company(company_id):
 
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error404(company_id, 'Company')
+    if not company:
+        return HTTPResponse.error(0x4041, table='Company', rid=company_id)
 
     # update fields of interests
     try:
         for key in data:
             if key not in [ 'name' ]:
-                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+                return HTTPResponse.error(0x4005, name=key)
 
             setattr(company, key, data[key])
 
@@ -226,7 +226,7 @@ def put_single_company(company_id):
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -243,7 +243,7 @@ def delete_single_company(company_id):
         return Database.Delete.Company(company_id)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 #
@@ -267,17 +267,17 @@ def post_single_company_units(company_id):
 
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error404(company_id, 'Company')
+    if not company:
+        return HTTPResponse.error(0x4041, table='Company', rid=company_id)
 
     # prepare the new unit
     if 'name' not in data:
-        return HTTPResponse.error(400, "Field 'name' is missing from input data.")
+        return HTTPResponse.error(0x4001, name='name')
 
     # check if the unit exists already or not
     unit: Optional[Unit] = Unit.query.filter_by(name=data['name'], company_id=company.id).first()
-    if unit is not None:
-        return HTTPResponse.error(400, "Unit already existing for this company.")
+    if unit:
+        return HTTPResponse.error(0x4002, child='Unit', parent='Company')
 
     try:
         unit = Unit(name=data['name'], company_id=company.id)
@@ -288,7 +288,7 @@ def post_single_company_units(company_id):
         return HTTPResponse.location(unit.id, url_for("unit.get_single_unit", unit_id=unit.id))
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_3, methods=["GET"])
 @authenticate
@@ -303,14 +303,14 @@ def get_single_company_units(company_id):
     """
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error404(company_id, 'Company')
+    if not company:
+        return HTTPResponse.error(0x4041, table='Company', rid=company_id)
 
     # retrieve the parameters from the request (or set the default value)
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -347,7 +347,7 @@ def get_single_company_units(company_id):
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_3, methods=["PUT"])
 @authenticate
@@ -360,7 +360,7 @@ def put_single_company_units(company_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST, GET, DELETE")
 
 @blueprint.route(ROUTE_3, methods=["DELETE"])
 @authenticate
@@ -375,15 +375,12 @@ def delete_single_company_units(company_id):
     """
     # lookup for the company
     company: Optional[Company] = Company.query.filter_by(id=company_id).first()
-    if company is None:
-        return HTTPResponse.error404(company_id, 'Company')
+    if not company:
+        return HTTPResponse.error(0x4041, table='Company', rid=company_id)
 
     try:
         Database.Delete.Unit(None, company_id)
         return HTTPResponse.noContent()
 
-    except KeyError as e:
-        return HTTPResponse.error(400, str(e))
-
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
