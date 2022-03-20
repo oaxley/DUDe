@@ -58,12 +58,12 @@ def post_auth():
     try:
         Validator.data(data, [ 'name', 'apikey' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     # lookup for the software in the database
     software: Optional[Software] = Software.query.filter_by(name=data['name'], apikey=data['apikey']).first()
     if not software:
-        return HTTPResponse.error(404, "Could not find the Software with the parameters provided.")
+        return HTTPResponse.error(0x4040, name='Software')
 
     try:
         # issue at and expiry time
@@ -83,7 +83,7 @@ def post_auth():
         return HTTPResponse.ok({ 'token': token })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 @blueprint.route("", methods=["GET", "PUT", "DELETE"])
@@ -96,5 +96,5 @@ def default_auth():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed(allowed="POST")
 
