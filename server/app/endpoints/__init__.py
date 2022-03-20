@@ -8,3 +8,7 @@ from .right      import blueprint as BPRight
 from .software   import blueprint as BPSoftware
 from .user_right import blueprint as BPUserRight
 
+routes = [
+    BPCompany, BPUnit, BPTeam, BPUser,
+    BPRight, BPSoftware, BPUserRight,
+]

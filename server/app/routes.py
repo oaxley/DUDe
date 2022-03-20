@@ -18,18 +18,13 @@ from typing import Any, List, Optional
 from flask import jsonify, request, abort
 from app import app
 
-from . import endpoints
+from .endpoints import routes
 
 
 #----- Globals
 # register all the endpoint
-app.register_blueprint(endpoints.BPCompany)
-app.register_blueprint(endpoints.BPUnit)
-app.register_blueprint(endpoints.BPTeam)
-app.register_blueprint(endpoints.BPUser)
-app.register_blueprint(endpoints.BPRight)
-app.register_blueprint(endpoints.BPSoftware)
-app.register_blueprint(endpoints.BPUserRight)
+for endpoint in routes:
+    app.register_blueprint(endpoint)
 
 #
 #----- Generic routes
