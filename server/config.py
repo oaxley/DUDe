@@ -36,3 +36,6 @@ class Config:
 
     # token expiry time in minutes
     TOKEN_EXPIRY_MINUTES = 15
+
+    # default locale
+    DEFAULT_LOCALE = "en_US"
