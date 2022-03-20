@@ -33,3 +33,6 @@ class Config:
     # max value for the Limit parameter in "Get All" query
     MAX_LIMIT_VALUE = 20
     DEFAULT_LIMIT_VALUE = 10
+
+    # token expiry time in minutes
+    TOKEN_EXPIRY_MINUTES = 15
