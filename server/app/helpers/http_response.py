@@ -18,6 +18,7 @@ from typing import Any, List, Dict
 from flask import Response, make_response, jsonify
 
 from app import app
+from app.localization import getMessage
 
 
 #----- Class
@@ -40,43 +41,37 @@ class HTTPResponse:
         return resp
 
     @staticmethod
-    def error(code: int, message: str) -> Response:
+    # def error(code: int, message: str) -> Response:
+    def error(code: int, **kwargs) -> Response:
         """Format an error response with the code and value provided
 
         Args:
-            code: the HTTP code for the error (4xx or 5xx)
-            value: the message to add the error response
+            code: the message code
+            kwargs: the list of keyword arguments for the message
 
         Returns:
             a Response object
         """
+
+        # retrieve the HTTP code
+        d1 = (code >> 4) & 0x0f
+        d2 = (code >> 8) & 0x0f
+        d3 = (code >> 12) & 0x0f
+        http_code = int(f"{d3}{d2}{d1}")
+
         # create the JSON value for this error
         value = jsonify({
             "error": {
-                "code": f"{code}",
-                "message": message
+                "code": f"{http_code}",
+                "message": getMessage(code, **kwargs)
             }
         })
 
         # create the response and add extra headers
-        response = make_response(value, code)
+        response = make_response(value, http_code)
         response = HTTPResponse.headers(response)
 
         return response
-
-    @staticmethod
-    def error404(rid: int, table: str) -> Response:
-        """Create a HTTP 404 (Not Found) response
-
-        Args:
-            rid: the record ID
-            table: the table where the record was lookup
-
-        Returns:
-            A Response object
-        """
-        return HTTPResponse.error(404, f"Could not find {table} with ID #{rid}.")
-
 
     @staticmethod
     def location(item_id: int, url: str) -> Response:
@@ -114,7 +109,7 @@ class HTTPResponse:
         return response
 
     @staticmethod
-    def ok(message) -> Response:
+    def ok(message: str) -> Response:
         """Create a HTTP 200 (OK) response
 
         Args:
@@ -130,12 +125,24 @@ class HTTPResponse:
         return response
 
     @staticmethod
-    def notAllowed(allowed = "GET, PUT, DELETE") -> Response:
+    def notAllowed(allowed: str = "GET, PUT, DELETE") -> Response:
         """Create a HTTP 405 (Method not allowed) response
 
         Returns:
             a Response object
         """
-        response = HTTPResponse.error(405, "Method not allowed.")
+        response = HTTPResponse.error(0x4050)
         response.headers['Allow'] = allowed
         return response
+
+    @staticmethod
+    def internalError(message: str):
+        """Create a HTTP 500 (Internal Server Error) response
+
+        Returns:
+            if debug mode is active, return the Python trace, otherwise returns the standard message
+        """
+        if app.config["DEBUG"] == True:
+            return HTTPResponse.error(0x5001, trace=message)
+
+        return HTTPResponse.error(0x5000)
