@@ -58,17 +58,17 @@ def post_user():
     try:
         Validator.data(data, [ 'name', 'email', 'team_id' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
-    if team is None:
-        return HTTPResponse.error404(data['team_id'], 'Team')
+    if not team:
+        return HTTPResponse.error(0x4041, rid=data['team_id'], table='Team')
 
     # check if the user exists already or not
     user: Optional[User] = User.query.filter_by(name=data['name'], email=data['email'], team_id=team.id).first()
-    if user is not None:
-        return HTTPResponse.error(400, f"User already exists for this Team.")
+    if user:
+        return HTTPResponse.error(0x4002, child="User", parent="Team")
 
     try:
         user = User(name=data['name'], email=data['email'], team_id=team.id)
@@ -79,7 +79,7 @@ def post_user():
         return HTTPResponse.location(user.id, url_for("user.get_single_user", user_id=user.id))
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -95,7 +95,7 @@ def get_user():
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -131,7 +131,7 @@ def get_user():
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -144,7 +144,7 @@ def put_user():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST, GET, DELETE")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -165,7 +165,7 @@ def delete_user():
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 #
@@ -182,7 +182,7 @@ def post_single_user(user_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("GET, PUT, DELETE")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_user(user_id):
@@ -195,8 +195,8 @@ def get_single_user(user_id):
     """
     # lookup for the user
     user: Optional[User] = User.query.filter_by(id=user_id).first()
-    if user is None:
-        return HTTPResponse.error404(user_id, 'User')
+    if not user:
+        return HTTPResponse.error(0x4041, rid=user_id, table='User')
 
     try:
         return HTTPResponse.ok({
@@ -207,7 +207,7 @@ def get_single_user(user_id):
         })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -221,8 +221,8 @@ def put_single_user(user_id):
     """
     # lookup for the user
     user: Optional[User] = User.query.filter_by(id=user_id).first()
-    if user is None:
-        return HTTPResponse.error404(user_id, 'User')
+    if not user:
+        return HTTPResponse.error(0x4041, rid=user_id, table='User')
 
     if int(request.headers.get('Content-Length', 0)) > 0:
         data = request.get_json()
@@ -232,13 +232,13 @@ def put_single_user(user_id):
     try:
         for key in data:
             if key not in [ 'name', 'email', 'team_id' ]:
-                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+                return HTTPResponse.error(0x4005, name=key)
 
             # ensure team_id exists
             if key == 'team_id':
                 team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
-                if team is None:
-                    return HTTPResponse.error404(data[key], 'Team')
+                if not team:
+                    return HTTPResponse.error(0x4041, rid=data[key], table='Team')
 
             setattr(user, key, data[key])
 
@@ -248,7 +248,7 @@ def put_single_user(user_id):
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -262,11 +262,11 @@ def delete_single_user(user_id):
     """
     # lookup for the user
     user: Optional[User] = User.query.filter_by(id=user_id).first()
-    if user is None:
-        return HTTPResponse.error404(user_id, 'User')
+    if not user:
+        return HTTPResponse.error(0x4041, rid=user_id, table='User')
 
     try:
         return Database.Delete.User(user.id, None)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))

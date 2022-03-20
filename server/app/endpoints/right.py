@@ -57,17 +57,17 @@ def post_right():
     try:
         Validator.data(data, [ 'name', 'team_id' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
-    if team is None:
-        return HTTPResponse.error404(data['team_id'], 'Team')
+    if not team:
+        return HTTPResponse.error(0x4041, rid=data['team_id'], table='Team')
 
     # check if the right exists already or not
     right: Optional[Right] = Right.query.filter_by(name=data['name'], team_id=team.id).first()
-    if right is not None:
-        return HTTPResponse.error(400, "Right already exists for this Team.")
+    if right:
+        return HTTPResponse.error(0x4002, child='Right', parent='Team')
 
     try:
         right = Right(name=data['name'], team_id=team.id)
@@ -78,7 +78,7 @@ def post_right():
         return HTTPResponse.location(right.id, url_for("right.get_single_right", right_id=right.id))
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -94,7 +94,7 @@ def get_right():
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -129,7 +129,7 @@ def get_right():
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -142,7 +142,7 @@ def put_right():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST, GET, DELETE")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -163,7 +163,7 @@ def delete_right():
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 #
@@ -180,7 +180,7 @@ def post_single_right(right_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("GET, PUT, DELETE")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_right(right_id):
@@ -193,8 +193,8 @@ def get_single_right(right_id):
     """
     # lookup for the right
     right: Optional[Right] = Right.query.filter_by(id=right_id).first()
-    if right is None:
-        return HTTPResponse.error404(right_id, 'Right')
+    if not right:
+        return HTTPResponse.error(0x4041, rid=right_id, table='Right')
 
     try:
         return HTTPResponse.ok({
@@ -204,7 +204,7 @@ def get_single_right(right_id):
         })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -218,8 +218,8 @@ def put_single_right(right_id):
     """
     # lookup for the right
     right: Optional[Right] = Right.query.filter_by(id=right_id).first()
-    if right is None:
-        return HTTPResponse.error404(right_id, 'Right')
+    if not right:
+        return HTTPResponse.error(0x4041, rid=right_id, table='Right')
 
     if int(request.headers.get('Content-Length', 0)) > 0:
         data = request.get_json()
@@ -229,13 +229,13 @@ def put_single_right(right_id):
     try:
         for key in data:
             if key not in [ 'name', 'team_id' ]:
-                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+                return HTTPResponse.error(0x4005, name=key)
 
             # ensure team_id exists
             if key == 'team_id':
                 team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
-                if team is None:
-                    return HTTPResponse.error404(data[key], 'Team')
+                if not team:
+                    return HTTPResponse.error(0x4041, rid=data[key], table='Team')
 
             setattr(right, key, data[key])
 
@@ -245,7 +245,7 @@ def put_single_right(right_id):
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -259,11 +259,11 @@ def delete_single_right(right_id):
     """
     # lookup for the right
     right: Optional[Right] = Right.query.filter_by(id=right_id).first()
-    if right is None:
-        return HTTPResponse.error404(right_id, 'Right')
+    if not right:
+        return HTTPResponse.error(0x4041, rid=right_id, table='Right')
 
     try:
         return Database.Delete.Right(right.id, None)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))

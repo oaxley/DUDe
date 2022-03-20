@@ -57,17 +57,17 @@ def post_software():
     try:
         Validator.data(data, [ 'name', 'team_id' ])
     except KeyError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4001, name=str(e))
 
     # check if the team exists
     team: Optional[Team] = Team.query.filter_by(id=data['team_id']).first()
-    if team is None:
-        return HTTPResponse.error404(data['team_id'], 'Team')
+    if not team:
+        return HTTPResponse.error(0x4041, rid=data['team_id'], table='Team')
 
     # check if the software exists already or not
     software: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=team.id).first()
-    if software is not None:
-        return HTTPResponse.error(400, "Software already exists for this team.")
+    if software:
+        return HTTPResponse.error(0x4002, child='Software', parent='Team')
 
     try:
         software = Software(name=data['name'], apikey=str(uuid4()), team_id=team.id)
@@ -78,7 +78,7 @@ def post_software():
         return HTTPResponse.location(software.id, url_for("software.get_single_software", software_id=software.id))
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["GET"])
 @authenticate
@@ -94,7 +94,7 @@ def get_software():
     try:
         params = Validator.parameters(request, [('offset', 0), ('limit', app.config['DEFAULT_LIMIT_VALUE'])])
     except ValueError as e:
-        return HTTPResponse.error(400, str(e))
+        return HTTPResponse.error(0x4004, name=e.args[0][0], type=e.args[0][1])
 
     # ensure parameters remains positive
     params['offset'] = abs(params['offset'])
@@ -130,7 +130,7 @@ def get_software():
         return HTTPResponse.ok(result)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_1, methods=["PUT"])
 @authenticate
@@ -143,7 +143,7 @@ def put_software():
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("POST, GET, DELETE")
 
 @blueprint.route(ROUTE_1, methods=["DELETE"])
 @authenticate
@@ -163,7 +163,7 @@ def delete_software():
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 
 #
@@ -180,7 +180,7 @@ def post_single_software(software_id):
     # this line ensures flask does not return errors if data is not purged
     if int(request.headers.get('Content-Length', 0)) > 0:
         request.get_json()
-    return HTTPResponse.notAllowed()
+    return HTTPResponse.notAllowed("GET, PUT, DELETE")
 
 @blueprint.route(ROUTE_2, methods=["GET"])
 def get_single_software(software_id):
@@ -193,8 +193,8 @@ def get_single_software(software_id):
     """
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
-    if software is None:
-        return HTTPResponse.error404(software_id, 'Software')
+    if not software:
+        return HTTPResponse.error(0x4041, rid=software_id, table='Software')
 
     try:
         return HTTPResponse.ok({
@@ -205,7 +205,7 @@ def get_single_software(software_id):
         })
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["PUT"])
 @authenticate
@@ -225,20 +225,20 @@ def put_single_software(software_id):
 
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
-    if software is None:
-        return HTTPResponse.error404(software_id, 'Software')
+    if not software:
+        return HTTPResponse.error(0x4041, rid=software_id, table='Software')
 
     # update fields of interests
     try:
         for key in data:
             if key not in [ 'name', 'team_id' ]:
-                return HTTPResponse.error(400, f"Could not update field '{key}'.")
+                return HTTPResponse.error(0x4005, name=key)
 
             # ensure team_id exists
             if key == 'team_id':
                 team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
-                if team is None:
-                    return HTTPResponse.error404(data[key], 'Team')
+                if not team:
+                    return HTTPResponse.error(0x4041, rid=data[key], table='Team')
 
             setattr(software, key, data[key])
 
@@ -248,7 +248,7 @@ def put_single_software(software_id):
         return HTTPResponse.noContent()
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
 
 @blueprint.route(ROUTE_2, methods=["DELETE"])
 @authenticate
@@ -262,11 +262,11 @@ def delete_single_software(software_id):
     """
     # lookup for the software
     software: Optional[Software] = Software.query.filter_by(id=software_id).first()
-    if software is None:
-        return HTTPResponse.error404(software_id, 'Software')
+    if not software:
+        return HTTPResponse.error(0x4041, rid=software_id, table='Software')
 
     try:
         return Database.Delete.Software(software.id, None)
 
     except Exception as e:
-        return HTTPResponse.error(500, str(e))
+        return HTTPResponse.internalError(str(e))
