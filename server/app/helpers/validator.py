@@ -36,7 +36,7 @@ class Validator:
         """
         for field in fields:
             if field not in input:
-                raise KeyError(f"Field {field} is missing from input data.")
+                raise KeyError(field)
 
     @staticmethod
     def parameters(request: Request, fields: List[Tuple[str, Any]]):
@@ -64,14 +64,14 @@ class Validator:
                         results[field] = int(value)
                         continue
                     except ValueError:
-                        raise ValueError(f"Field {field} cannot be converted to an int.")
+                        raise ValueError((field, 'int'))
 
                 if type(default) is str:
                     try:
                         results[field] = str(value)
                         continue
                     except ValueError:
-                        raise ValueError(f"Field {field} cannot be converted to a str.")
+                        raise ValueError((field, str))
 
                 if type(default) is bool:
                     results[field] = bool(value)
