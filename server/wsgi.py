@@ -12,6 +12,7 @@
 # @brief	Dude main application file
 
 #----- Imports
+import logging
 from app import app, db
 
 
@@ -19,6 +20,13 @@ from app import app, db
 
 # create the SQLAlchemy tables
 db.create_all()
+
+# configure gunicorn logs
+if __name__ != "__main__":
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
 
 # run the application
 if __name__ == "__main__":
