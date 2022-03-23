@@ -12,18 +12,14 @@
 # @brief	Dude main application file
 
 #----- Imports
-
-
-#----- Logging
-import logging
-
-# setup the logging facility
-logging.basicConfig(format="%(asctime)s %(levelname)s %(message)s", level=logging.INFO)
+from app import app, db
 
 
 #----- Begin
-# import the application & database
-from app import app, db
 
-# create the database if it does not exist
+# create the SQLAlchemy tables
 db.create_all()
+
+# run the application
+if __name__ == "__main__":
+    app.run()
