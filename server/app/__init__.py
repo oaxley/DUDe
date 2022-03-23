@@ -12,18 +12,18 @@
 # @brief	Application package init file
 
 #----- Imports
-import logging
-
 from flask import Flask
-from config import Config
 from flask_sqlalchemy import SQLAlchemy
+from .config import Config
 
 
 #----- Begin
+
 # define the flask application and load the configuration
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# define SQLAlchemy object
 db = SQLAlchemy(app)
 
 # import localized messages
