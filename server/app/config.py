@@ -24,7 +24,7 @@ class Config:
     DUDE_SECRET_KEY = os.environ.get("DUDE_SECRET_KEY") or str(uuid.uuid4())
 
     # SQLite database
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, "dude.sqlite")
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, "../..", "dude.sqlite")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # application semantic version
