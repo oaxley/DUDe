@@ -1,0 +1,469 @@
+openapi: '3.0.2'
+info:
+  title: Dummy User Directory
+  description: This is a very simple user directory to validate user's rights
+  version: '1.0.0'
+  contact:
+    name: Sebastien LEGRAND
+    email: oaxley@gmail.com
+  license:
+    name: Apache License 2.0
+    url: https://opensource.org/licenses/Apache-2.0
+
+servers:
+  - url: https://localhost:5000
+
+components:
+  schemas:
+
+    error_message:
+      description: The standard error message returned by the API
+      type: object
+      properties:
+        code:
+          type: string
+          description: The HTTP error code 
+        message:
+          type: string
+          description: The detailed message corresponding to the error
+
+  parameters:
+    limitParam:
+      description: Limit the number of records returned by a GET all query
+      name: limit
+      in: query
+      schema:
+        type: integer
+        format: int32
+        default: 10
+        maximum: 20
+
+    offsetParam:
+      description: Offset to return the remaining records by a GET all query
+      name: offset
+      in: query
+      schema:
+        type: integer
+        format: int32
+        default: 0
+        minimum: 0
+
+  responses:
+    NotAllowed:
+      description: Method not allowed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_message'
+
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_message'
+
+  securitySchemes:
+    
+    api_key:
+      type: apiKey
+      name: X-API-Token
+      in: header
+
+tags:
+- name: company
+  description: Company management
+- name: unit
+  description: Unit management
+- name: team  
+  description: Team management
+- name: user  
+  description: User management
+- name: right  
+  description: Right management
+- name: software 
+  description: Software management
+- name: user-right
+  description: User/Right management
+  
+paths:
+  /version:
+    summary: Return the current version of the API
+    get:
+      summary: Return the current version of the API
+
+  /auth:
+    summary: Return a JSON Web Token that can be used to validate a user for a specific right
+    post:
+      summary: Retrieve the authentication token to be used during validation process
+
+  /validate:
+    summary: Validate a user for a specific right
+    post:
+      summary: Validate a user / right association
+
+
+
+  /companies:
+    
+    summary: Manage companies
+    post:
+      tags:
+        - "company"
+      summary: Create a new company
+
+    get:
+      tags:
+        - "company"
+      summary: Retrieve all the companies
+
+    put:
+      tags:
+        - "company"
+      summary: Update all the companies
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      tags:
+        - "company"
+      summary: Delete all the companies
+
+  /companies/{company_id}:
+    summary: Manage a specific company
+    post:
+      summary: Create a new company with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific company
+
+    put:
+      summary: Update details for a specific company
+
+    delete:
+      summary: Delete a specific company
+
+  /companies/{company_id}/units:
+    summary: Manage units within this specific company
+    post:
+      summary: Create a new unit and associate it with the company
+
+    get:
+      summary: Retrieve details for all the units of this company
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    put:
+      summary: Update details for all the units of this company
+
+    delete:
+      summary: Delete all the units for this company
+
+
+
+  /units:
+    summary: Manage units inside a comapny
+    post:
+      summary: Create a new unit
+
+    get:
+      summary: Retrieve all the units
+
+    put:
+      summary: Update all the units
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the units
+
+
+
+  /units/{unit_id}:
+    summary: Manage a specific unit
+    post:
+      summary: Create a new unit with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific unit
+
+    put:
+      summary: Update details for a specific unit
+
+    delete:
+      summary: Delete a specific unit
+
+  /units/{unit_id}/teams:
+    summary: Manage teams within this specific unit
+    post:
+      summary: Create a new team for this unit
+
+    get:
+      summary: Retrieve details for all the teams for this unit
+
+    put:
+      summary: Update details for all the teams for this unit
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the teams for this unit
+
+
+
+
+  /teams:
+    summary: Manage teams that are part of a unit
+    post:
+      summary: Create a new team
+
+    get:
+      summary: Retrieve all the teams
+
+    put:
+      summary: Update all the teams
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the teams
+
+
+  /teams/{team_id}:
+    summary: Manage a specific team
+    post:
+      summary: Create a new team with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific team
+
+    put:
+      summary: Update details for a specific team
+
+    delete:
+      summary: Delete a specific team
+
+  /teams/{team_id}/software:
+    summary: Manage a specific software for this team
+    post:
+      summary: Create a new software for this team
+
+    get:
+      summary: Retrieve details for all the software for this team
+
+    put:
+      summary: Update details for all the software for this team
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the software for this team
+
+  /teams/{team_id}/users:
+    summary: Manage a specific software for this team
+    post:
+      summary: Create a new user for this team
+
+    get:
+      summary: Retrieve details for all the users for this team
+
+    put:
+      summary: Update details for all the users for this team
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the users for this team
+
+  /teams/{team_id}/rights:
+    summary: Manage a specific software for this team
+    post:
+      summary: Create a new right for this team
+
+    get:
+      summary: Retrieve details for all the rights for this team
+
+    put:
+      summary: Update details for all the rights for this team
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the rights for this team
+
+
+
+  /users:
+    summary: Manage users that belongs to a team
+    post:
+      summary: Create a new user
+
+    get:
+      summary: Retrieve all the users
+
+    put:
+      summary: Update all the users
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the users
+
+
+
+  /users/{user_id}:
+    summary: Manage a specific user
+    post:
+      summary: Create a new user with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific user
+
+    put:
+      summary: Update details for a specific user
+
+    delete:
+      summary: Delete a specific user
+
+
+
+
+
+  /rights:
+    summary: Manage rights available inside a team
+    post:
+      summary: Create a new right
+
+    get:
+      summary: Retrieve all the rights
+
+    put:
+      summary: Update all the rights
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the rights
+
+
+
+  /rights/{right_id}:
+    summary: Manage a specific right
+    post:
+      summary: Create a new right with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific right
+
+    put:
+      summary: Update details for a specific right
+
+    delete:
+      summary: Delete a specific right
+
+
+
+
+
+  /software:
+    summary: Manage software used by a team and that needs to control user rights
+    post:
+      summary: Create a new software
+
+    get:
+      summary: Retrieve all the software
+
+    put:
+      summary: Update all the software
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the software
+
+
+
+
+  /software/{software_id}:
+    summary: Manage a specific software
+    post:
+      summary: Create a new software with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific software
+
+    put:
+      summary: Update details for a specific software
+
+    delete:
+      summary: Delete a specific software
+
+
+
+
+
+  /user-rights:
+    summary: Manage the association between users and rights
+    post:
+      summary: Create a new user/right association
+
+    get:
+      summary: Retrieve all the user/right associations
+
+    put:
+      summary: Update all the user/right associations
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    delete:
+      summary: Delete all the user/right associations
+
+
+
+  /user-rights/{userright_id}:
+    summary: Manage a specifc association between users and rights
+    post:
+      summary: Create a new user/right association with this ID
+      responses:
+        '405':
+          $ref: '#/components/responses/NotAllowed'
+
+    get:
+      summary: Retrieve details for a specific user/right association
+
+    put:
+      summary: Update details for a specific user/right association
+
+    delete:
+      summary: Delete a specific user/right association
+
