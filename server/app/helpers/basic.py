@@ -28,7 +28,7 @@ def authenticate(fn):
         # look for the X-API-Token header in the request
         token = request.headers.get('X-API-Token', '')
         if token != app.config['DUDE_SECRET_KEY']:
-            return HTTPResponse.error(403, "API token is missing or invalid.")
+            return HTTPResponse.error(0x4012)
 
         # call the function
         return fn(*args, **kwargs)

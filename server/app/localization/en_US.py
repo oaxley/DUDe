@@ -41,6 +41,7 @@ messages: Dict[int, str] = {
     ## 401x: Unauthorized (ie unauthenticated)
     0x4010: "Token has expired.",
     0x4011: "Token contains invalid data.",
+    0x4012: "Token is missing.",
 
     ## 403x: Forbidden
     0x4030: "User is not authorized to perform the operation.",
