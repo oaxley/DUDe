@@ -36,4 +36,7 @@ reuse_port = True
 daemon = False
 
 ## Server Socket
-bind = ['0.0.0.0:5000']
+bind = ['localhost:5000']
+
+# default application
+wsgi_app = "wsgi:app"
