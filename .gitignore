@@ -3,3 +3,7 @@
 **/dude.sqlite
 
 **/tmp
+
+# remove all the certificates except the Makefile
+certs/**
+!certs/Makefile
