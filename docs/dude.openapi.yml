@@ -1,4 +1,8 @@
 openapi: '3.0.2'
+
+#
+#----- Info
+#
 info:
   title: Dummy User Directory
   description: This is a very simple user directory to validate user's rights
@@ -10,12 +14,22 @@ info:
     name: Apache License 2.0
     url: https://opensource.org/licenses/Apache-2.0
 
+
+#
+#----- Servers
+#
 servers:
   - url: https://localhost:5000
+  - url: http://localhost:5000
 
+
+#
+#----- Components
+#
 components:
-  schemas:
 
+  #----- Schemas
+  schemas:
     error_message:
       description: The standard error message returned by the API
       type: object
@@ -27,443 +41,1944 @@ components:
           type: string
           description: The detailed message corresponding to the error
 
-  parameters:
-    limitParam:
-      description: Limit the number of records returned by a GET all query
-      name: limit
-      in: query
-      schema:
-        type: integer
-        format: int32
-        default: 10
-        maximum: 20
-
-    offsetParam:
-      description: Offset to return the remaining records by a GET all query
-      name: offset
-      in: query
-      schema:
-        type: integer
-        format: int32
-        default: 0
-        minimum: 0
-
+  #----- Responses
   responses:
-    NotAllowed:
-      description: Method not allowed
+    InternalError:
+      description: Internal Server Error
       content:
         application/json:
+          example:
+            code: "500"
+            message: Internal Server Error
           schema:
             $ref: '#/components/schemas/error_message'
 
-    NotFound:
-      description: Not Found
+    BadRequest:
+      description: Bad Request
       content:
         application/json:
+          example:
+            code: "400"
+            message: Field 'name' is missing from the input data.
           schema:
             $ref: '#/components/schemas/error_message'
 
+  #----- Security Schemes
   securitySchemes:
-    
     api_key:
       type: apiKey
       name: X-API-Token
       in: header
 
+
+#
+#----- Tags
+#
 tags:
-- name: company
+- name: Company
   description: Company management
-- name: unit
+- name: Company/Unit
+  description: Unit management under a specifc company
+
+- name: Unit
   description: Unit management
-- name: team  
+- name: Unit/Team
+  description: Team management under a specifc unit
+
+- name: Team  
   description: Team management
-- name: user  
+- name: Team/Software
+  description: Software management under a specifc team
+- name: Team/User
+  description: User management under a specifc team
+- name: Team/Right
+  description: Right management under a specifc team
+
+- name: User  
   description: User management
-- name: right  
+
+- name: Right  
   description: Right management
-- name: software 
+
+- name: Software 
   description: Software management
-- name: user-right
+
+- name: User/Right
   description: User/Right management
-  
+
+- name: Generic
+  description: Generic endpoints
+
+
+#
+#-----Paths 
+#
 paths:
+
+#----------- VERSION ---------------------------
   /version:
     summary: Return the current version of the API
     get:
+      tags:
+        - Generic
       summary: Return the current version of the API
+      responses:
+        '200':
+          description: The API version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
 
+#----------- AUTH ---------------------------
   /auth:
     summary: Return a JSON Web Token that can be used to validate a user for a specific right
     post:
+      tags:
+        - Generic
       summary: Retrieve the authentication token to be used during validation process
+      operationId: postAuthenticate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  description: The name of the software
+                  type: string
+                apikey:
+                  description: The API Key associated with the software
+                  type: string
+              required:
+                - name
+                - apikey
+      responses:
+        '200':
+          description: JWT Token for User/Right validation operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Software with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- VALIDATE ---------------------------
   /validate:
     summary: Validate a user for a specific right
     post:
+      tags:
+        - Generic
       summary: Validate a user / right association
+      operationId: postValidate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                token:
+                  description: The token returned by authentication endpoint
+                  type: string
+                email:
+                  description: The email of the user
+                  type: string
+                right:
+                  description: The right to check for this user
+                  type: string
+              required:
+                - token
+                - email
+                - right
+      responses:
+        '200':
+          description: User is authorized
+          content:
+            application/json:
+              schema:
+                properties:
+                  message:
+                    type: string
+                    example: User is authorized.
 
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
+        '401':
+          description: Unauthorized if token is expired or any of the parameters can't be found
+          content:
+            application/json:
+              example:
+                code: "401"
+                message: Token contains invalid data.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '403':
+          description: Forbidden if user is not authorized for this right
+          content:
+            application/json:
+              example:
+                code: "403"
+                message: User is not authorized to perform the operation.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- COMPANIES ---------------------------
   /companies:
-    
     summary: Manage companies
     post:
       tags:
-        - "company"
+        - Company
       summary: Create a new company
+      operationId: postCompany
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                name:
+                  description: The name of the company
+                  type: string
+      responses:
+        '201':
+          description: Company is created
+          headers:
+            Location:
+              description: The location to retrieve the new company
+              schema:
+                type: string
+                example: /companies/1
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     get:
       tags:
-        - "company"
+        - Company
       summary: Retrieve all the companies
-
-    put:
-      tags:
-        - "company"
-      summary: Update all the companies
+      operationId: getCompanies
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of companies
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  companies:
+                    description: The list of companies
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the company
+                          type: string
+                        name:
+                          description: The name of the company
+                          type: string
+                    
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
       tags:
-        - "company"
+        - Company
       summary: Delete all the companies
+      operationId: deleteCompanies
+      responses:
+        '204':
+          description: All the companies (and their children) have been deleted
 
+        '500':
+          $ref: '#/components/responses/InternalError'
+        
   /companies/{company_id}:
     summary: Manage a specific company
-    post:
-      summary: Create a new company with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
-
     get:
+      tags:
+        - Company
       summary: Retrieve details for a specific company
+      operationId: getCompany
+      parameters:
+        - name: company_id
+          in: path
+          description: ID of the company to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+                  name:
+                    type: string
+                    example: ACME
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Company with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - Company
       summary: Update details for a specific company
 
     delete:
+      tags:
+        - Company
       summary: Delete a specific company
+      operationId: deleteCompany
+      parameters:
+        - name: company_id
+          in: path
+          description: ID of the company to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The company (and its children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Company with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- COMPANY/UNITS ---------------------------
   /companies/{company_id}/units:
     summary: Manage units within this specific company
     post:
+      tags:
+        - Company/Unit
       summary: Create a new unit and associate it with the company
 
     get:
+      tags:
+        - Company/Unit
       summary: Retrieve details for all the units of this company
+      operationId: getCompanyUnits
+      parameters:
+        - name: company_id
+          in: path
+          description: ID of the company
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of units
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  units:
+                    description: The list of units
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the unit
+                          type: string
+                        name:
+                          description: The name of the unit
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
-    put:
-      summary: Update details for all the units of this company
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Company with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Company/Unit
       summary: Delete all the units for this company
+      operationId: deleteCompanyUnits
+      parameters:
+        - name: company_id
+          in: path
+          description: ID of the company
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: All the units (and their children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Company with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
+#----------- UNITS ---------------------------
   /units:
     summary: Manage units inside a comapny
     post:
+      tags:
+        - Unit
       summary: Create a new unit
 
     get:
+      tags:
+        - Unit
       summary: Retrieve all the units
-
-    put:
-      summary: Update all the units
+      operationId: getUnits
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of units
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  units:
+                    description: The list of units
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the unit
+                          type: string
+                        name:
+                          description: The name of the unit
+                          type: string
+                        company_id:
+                          description: The ID of the company it belongs to
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Unit
       summary: Delete all the units
+      operationId: deleteUnits
+      responses:
+        '204':
+          description: All the units (and their children) have been deleted
 
-
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /units/{unit_id}:
     summary: Manage a specific unit
-    post:
-      summary: Create a new unit with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
 
     get:
+      tags:
+        - Unit
       summary: Retrieve details for a specific unit
+      operationId: getUnit
+      parameters:
+        - name: unit_id
+          in: path
+          description: ID of the unit to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 2
+                  name:
+                    type: string
+                    example: Marketing
+                  company_id:
+                    type: string
+                    example: 1
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Unit with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - Unit
       summary: Update details for a specific unit
 
     delete:
+      tags:
+        - Unit
       summary: Delete a specific unit
+      operationId: deleteUnit
+      parameters:
+        - name: unit_id
+          in: path
+          description: ID of the unit to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The unit (and its children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Unit with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- UNIT/TEAMS ---------------------------
   /units/{unit_id}/teams:
     summary: Manage teams within this specific unit
     post:
+      tags:
+        - Unit/Team
       summary: Create a new team for this unit
 
     get:
+      tags:
+        - Unit/Team
       summary: Retrieve details for all the teams for this unit
-
-    put:
-      summary: Update details for all the teams for this unit
+      operationId: getUnitTeams
+      parameters:
+        - name: unit_id
+          in: path
+          description: ID of the unit
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of teams
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  teams:
+                    description: The list of teams
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the team
+                          type: string
+                        name:
+                          description: The name of the team
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Unit with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+         
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Unit/Team
       summary: Delete all the teams for this unit
+      operationId: deleteUnitTeams
+      parameters:
+        - name: unit_id
+          in: path
+          description: ID of the unit
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: All the teams (and their children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Unit with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
-
+#----------- TEAMS ---------------------------
   /teams:
     summary: Manage teams that are part of a unit
     post:
+      tags:
+        - Team
       summary: Create a new team
-
+  
     get:
+      tags:
+        - Team
       summary: Retrieve all the teams
-
-    put:
-      summary: Update all the teams
+      operationId: getTeams
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of teams
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  teams:
+                    description: The list of teams
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the team
+                          type: string
+                        name:
+                          description: The name of the team
+                          type: string
+                        unit_id:
+                          description: The ID of the unit it belongs to
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Team
       summary: Delete all the teams
+      operationId: deleteTeams
+      responses:
+        '204':
+          description: All the teams (and their children) have been deleted
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /teams/{team_id}:
     summary: Manage a specific team
-    post:
-      summary: Create a new team with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
 
     get:
+      tags:
+        - Team
       summary: Retrieve details for a specific team
+      operationId: getTeam
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+                  name:
+                    type: string
+                    example: Press
+                  unit_id:
+                    type: string
+                    example: 1
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - Team
       summary: Update details for a specific team
 
     delete:
+      tags:
+        - Team
       summary: Delete a specific team
+      operationId: deleteTeam
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The team (and its children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- TEAM/SOFTWARE ---------------------------
   /teams/{team_id}/software:
     summary: Manage a specific software for this team
     post:
+      tags:
+        - Team/Software
       summary: Create a new software for this team
 
     get:
+      tags:
+        - Team/Software
       summary: Retrieve details for all the software for this team
-
-    put:
-      summary: Update details for all the software for this team
+      operationId: getTeamSoftware
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of software
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  software:
+                    description: The list of software
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the software
+                          type: string
+                        name:
+                          description: The name of the software
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Team/Software
       summary: Delete all the software for this team
+      operationId: deleteTeamSoftware
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: All the software have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- TEAM/USERS ---------------------------
   /teams/{team_id}/users:
     summary: Manage a specific software for this team
     post:
+      tags:
+        - Team/User
       summary: Create a new user for this team
 
     get:
+      tags:
+        - Team/User
       summary: Retrieve details for all the users for this team
-
-    put:
-      summary: Update details for all the users for this team
+      operationId: getTeamUsers
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of users
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  users:
+                    description: The list of users
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the user
+                          type: string
+                        name:
+                          description: The name of the user
+                          type: string
+                        email:
+                          description: The email of the user
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Team/User
       summary: Delete all the users for this team
+      operationId: deleteTeamUsers
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: All the users (and their children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+#----------- TEAM/RIGHTS ---------------------------
   /teams/{team_id}/rights:
     summary: Manage a specific software for this team
     post:
+      tags:
+        - Team/Right
       summary: Create a new right for this team
 
     get:
+      tags:
+        - Team/Right
       summary: Retrieve details for all the rights for this team
-
-    put:
-      summary: Update details for all the rights for this team
+      operationId: getTeamRights
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of rights
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  rights:
+                    description: The list of rights
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the user
+                          type: string
+                        name:
+                          description: The name of the right
+                          type: string
+                        team_id:
+                          description: The ID of the team it belongs to
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Team/Right
       summary: Delete all the rights for this team
+      operationId: deleteTeamRights
+      parameters:
+        - name: team_id
+          in: path
+          description: ID of the team
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: All the rights (and their children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Team with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
+#----------- USERS ---------------------------
   /users:
     summary: Manage users that belongs to a team
     post:
+      tags:
+        - User
       summary: Create a new user
 
     get:
+      tags:
+        - User
       summary: Retrieve all the users
-
-    put:
-      summary: Update all the users
+      operationId: getUsers
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of users
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  users:
+                    description: The list of users
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the user
+                          type: string
+                        name:
+                          description: The name of the user
+                          type: string
+                        email:
+                          description: The email of the user
+                          type: string
+                        team_id:
+                          description: The ID of the team it belongs to
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - User
       summary: Delete all the users
+      operationId: deleteUsers
+      responses:
+        '204':
+          description: All the users (and their children) have been deleted
 
-
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /users/{user_id}:
     summary: Manage a specific user
-    post:
-      summary: Create a new user with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
-
     get:
+      tags:
+        - User
       summary: Retrieve details for a specific user
+      operationId: getUser
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+                  name:
+                    type: string
+                    example: John DOE
+                  email:
+                    type: string
+                    example: john.doe@acme.com
+                  team_id:
+                    type: string
+                    example: 1
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find User with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - User
       summary: Update details for a specific user
 
     delete:
+      tags:
+        - User
       summary: Delete a specific user
+      operationId: deleteUser
+      parameters:
+        - name: user_id
+          in: path
+          description: ID of the user to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The user (and its children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find User with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
-
-
+#----------- RIGHTS ---------------------------
   /rights:
     summary: Manage rights available inside a team
     post:
+      tags:
+        - Right
       summary: Create a new right
 
     get:
+      tags:
+        - Right
       summary: Retrieve all the rights
-
-    put:
-      summary: Update all the rights
+      operationId: getRights
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of rights
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  rights:
+                    description: The list of rights
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the user
+                          type: string
+                        name:
+                          description: The name of the right
+                          type: string
+                        team_id:
+                          description: The ID of the team it belongs to
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Right
       summary: Delete all the rights
+      operationId: deleteRights
+      responses:
+        '204':
+          description: All the rights (and their children) have been deleted
 
-
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /rights/{right_id}:
     summary: Manage a specific right
-    post:
-      summary: Create a new right with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
-
     get:
+      tags:
+        - Right
       summary: Retrieve details for a specific right
+      operationId: getRight
+      parameters:
+        - name: right_id
+          in: path
+          description: ID of the right to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+                  name:
+                    type: string
+                    example: read
+                  team_id:
+                    type: string
+                    example: 1
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Right with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - Right
       summary: Update details for a specific right
 
     delete:
+      tags:
+        - Right
       summary: Delete a specific right
+      operationId: deleteRight
+      parameters:
+        - name: right_id
+          in: path
+          description: ID of the right to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The right (and its children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Right with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
-
-
+#----------- SOFTWARE ---------------------------
   /software:
     summary: Manage software used by a team and that needs to control user rights
     post:
+      tags:
+        - Software
       summary: Create a new software
 
     get:
+      tags:
+        - Software
       summary: Retrieve all the software
-
-    put:
-      summary: Update all the software
+      operationId: getAllSoftware
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of software
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  software:
+                    description: The list of software
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the software
+                          type: string
+                        name:
+                          description: The name of the software
+                          type: string
+                        team_id:
+                          description: The ID of the team it belongs to
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - Software
       summary: Delete all the software
+      operationId: deleteAllSoftware
+      responses:
+        '204':
+          description: All the software (and their children) have been deleted
 
-
-
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /software/{software_id}:
     summary: Manage a specific software
-    post:
-      summary: Create a new software with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
-
     get:
+      tags:
+        - Software
       summary: Retrieve details for a specific software
+      operationId: getSoftware
+      parameters:
+        - name: software_id
+          in: path
+          description: ID of the software to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+                  name:
+                    type: string
+                    example: StoryBuilder
+                  team_id:
+                    type: string
+                    example: 1
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Software with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - Software
       summary: Update details for a specific software
 
     delete:
+      tags:
+        - Software
       summary: Delete a specific software
+      operationId: deleteSoftware
+      parameters:
+        - name: software_id
+          in: path
+          description: ID of the software to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The software (and its children) have been deleted
 
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find Software with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
 
+        '500':
+          $ref: '#/components/responses/InternalError'
 
-
-
+#----------- USER-RIGHTS ---------------------------
   /user-rights:
     summary: Manage the association between users and rights
     post:
+      tags:
+        - User/Right
       summary: Create a new user/right association
 
     get:
+      tags:
+        - User/Right
       summary: Retrieve all the user/right associations
-
-    put:
-      summary: Update all the user/right associations
+      operationId: getUserRights
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of records returned
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 20
+        - name: offset
+          in: query
+          description: Offset where to start the search query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
       responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
+        '200':
+          description: The list of user-rights
+          content:
+            application/json:
+              schema:
+                properties:
+                  offset:
+                    description: The current offset for this request
+                    type: string
+                    example: 0
+                  limit:
+                    description: The current limit value for this request
+                    type: string
+                    example: 10
+                  count:
+                    description: The last number of records read
+                    type: string
+                    example: 10
+                  user-rights:
+                    description: The list of user-rights
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          description: The ID of the user-right
+                          type: string
+                        user_id:
+                          description: The ID of the user
+                          type: string
+                        right_id:
+                          description: The ID of the right
+                          type: string
+                    
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     delete:
+      tags:
+        - User/Right
       summary: Delete all the user/right associations
+      operationId: deleteUserRights
+      responses:
+        '204':
+          description: All the user-right (and their children) have been deleted
 
-
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /user-rights/{userright_id}:
     summary: Manage a specifc association between users and rights
-    post:
-      summary: Create a new user/right association with this ID
-      responses:
-        '405':
-          $ref: '#/components/responses/NotAllowed'
-
     get:
+      tags:
+        - User/Right
       summary: Retrieve details for a specific user/right association
+      operationId: getUserRight
+      parameters:
+        - name: userright_id
+          in: path
+          description: ID of the user-right to return
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+                    example: 1
+                  user_id:
+                    type: string
+                    example: 1
+                  right_id:
+                    type: string
+                    example: 1
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find UserRight with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
     put:
+      tags:
+        - User/Right
       summary: Update details for a specific user/right association
 
     delete:
+      tags:
+        - User/Right
       summary: Delete a specific user/right association
+      operationId: deleteUserRight
+      parameters:
+        - name: userright_id
+          in: path
+          description: ID of the user-right to delete
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: The user-right (and its children) have been deleted
+
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              example:
+                code: "404"
+                message: Could not find UserRight with the parameters provided.
+              schema:
+                $ref: '#/components/schemas/error_message'
+
+        '500':
+          $ref: '#/components/responses/InternalError'
 
