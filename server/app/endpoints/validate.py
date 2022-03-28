@@ -29,6 +29,8 @@ from app.helpers import (
     Validator, HTTPResponse
 )
 
+from app.localization import getMessage
+
 
 #----- Globals
 blueprint = Blueprint("validation", __name__, url_prefix="/validate")
@@ -87,7 +89,7 @@ def post_validate():
         if not user_right:
             return HTTPResponse.error(0x4030)
         else:
-            return HTTPResponse.ok({ "message": "User is authorized" })
+            return HTTPResponse.ok({ "message": getMessage(0x2000) })
 
     except Exception as e:
         return HTTPResponse.internalError(str(e))

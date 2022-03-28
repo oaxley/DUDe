@@ -25,6 +25,7 @@ messages: Dict[int, str] = {
     # 1xxxh: HTTP 1xx messages
 
     # 2xxxh: HTTP 2xx messages
+    0x2000: "User is authorized.",
 
     # 3xxxh: HTTP 3xx messges
 
