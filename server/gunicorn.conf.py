@@ -11,6 +11,12 @@
 #
 # @brief	Gunicorn configuration file
 
+#----- Imports
+import os
+import ssl
+
+
+#----- Globals
 ## Debugging
 reload = False
 reload_engine = 'auto'
@@ -22,9 +28,19 @@ print_config = False
 # loglevel = 'info'
 
 ## SSL
-# keyfile = None
-# certfile = None
-# ssl_version = ssl.PROTOCOL_TLS
+basedir = os.path.dirname(__file__)
+certsdir = os.path.join(basedir, "../certs")
+
+keyfile = os.path.join(certsdir, "my_dev_site.key.pem")
+if not os.path.exists(keyfile):
+    keyfile = None
+
+certfile = os.path.join(certsdir, "my_dev_site.cert.pem")
+if not os.path.exists(certfile):
+    certfile = None
+
+ssl_version = ssl.PROTOCOL_TLS
+
 # cert_reqs = None
 # ca_certs = None
 # suppress_ragged_eofs = True
