@@ -124,7 +124,8 @@ def get_single_team_software(team_id):
             "software": [
                 {
                     "id": f"{item.id}",
-                    "name": item.name
+                    "name": item.name,
+                    "apikey": item.apikey
                 } for item in items
             ]
         }
