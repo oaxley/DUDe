@@ -117,7 +117,7 @@ def get_right():
             "offset": params['offset'],
             "limit": params['limit'],
             "count": f"{len(items)}",
-            "users": [
+            "rights": [
                 {
                     "id": f"{item.id}",
                     "name": item.name,
