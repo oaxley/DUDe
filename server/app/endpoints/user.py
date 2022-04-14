@@ -18,7 +18,7 @@ from typing import List, Optional
 from flask import Blueprint, request, url_for
 
 from app import app, db
-from app.models import Team, User
+from app.models import Team, User, Unit, Company
 
 from app.helpers import (
     authenticate, Validator, HTTPResponse, Database
@@ -234,11 +234,43 @@ def put_single_user(user_id):
             if key not in [ 'name', 'email', 'team_id' ]:
                 return HTTPResponse.error(0x4005, name=key)
 
-            # ensure team_id exists
+            # same name cannot exist twice in the same team
+            if key == 'name':
+                item: Optional[User] = User.query.filter_by(name=data[key], team_id=user.team_id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=data[key], parent='Team')
+
+            # same email cannot exist twice in the same team
+            if key == 'email':
+                item: Optional[User] = User.query.filter_by(email=data[key], team_id=user.team_id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=data[key], parent='Team')
+
+            # change of team within the same company
             if key == 'team_id':
-                team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
-                if not team:
+
+                # retrieve initial company for this user
+                u_team: Team = Team.query.filter_by(id=user.team_id).first()
+                u_unit: Unit = Unit.query.filter_by(id=u_team.unit_id).first()
+                u_company: Company = Company.query.filter_by(id=u_unit.company_id).first()
+
+                # check if the team exists
+                q_team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
+                if not q_team:
                     return HTTPResponse.error(0x4041, rid=data[key], table='Team')
+
+                # retrieve the unit and the company for this team
+                q_unit: Unit = Unit.query.filter_by(id=q_team.unit_id).first()
+                q_company: Company = Company.query.filter_by(id=q_unit.company_id).first()
+
+                # check if both units are part of the same company
+                if q_company.id != u_company.id:
+                    return HTTPResponse.error(0x4000, key=key)
+
+                # ensure user does not already exist within this new team
+                item: Optional[User] = User.query.filter_by(name=user.name, email=user.email, team_id=q_team.id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, parent='Team', child='User')
 
             setattr(user, key, data[key])
 
