@@ -38,6 +38,7 @@ messages: Dict[int, str] = {
     0x4003: "{name} already exists.",
     0x4004: "Field '{name}' cannot be converted to a '{type}'.",
     0x4005: "Not able to update field '{name}'.",
+    0x4006: "Association not authorized between two different teams.",
 
     ## 401x: Unauthorized (ie unauthenticated)
     0x4010: "Token has expired.",
