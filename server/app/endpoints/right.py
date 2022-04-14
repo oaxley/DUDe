@@ -228,14 +228,14 @@ def put_single_right(right_id):
 
     try:
         for key in data:
-            if key not in [ 'name', 'team_id' ]:
+            if key not in [ 'name' ]:
                 return HTTPResponse.error(0x4005, name=key)
 
-            # ensure team_id exists
-            if key == 'team_id':
-                team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
-                if not team:
-                    return HTTPResponse.error(0x4041, rid=data[key], table='Team')
+            # ensure name does not exist
+            if key == 'name':
+                item: Optional[Right] = Right.query.filter_by(name=data['name'], team_id=right.team_id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=data['name'], parent='Team')
 
             setattr(right, key, data[key])
 
