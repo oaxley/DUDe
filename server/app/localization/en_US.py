@@ -50,6 +50,7 @@ messages: Dict[int, str] = {
     ## 404x: Not Found
     0x4040: "Could not find {name} with the parameters provided.",
     0x4041: "Could not find {table} with ID #{rid}.",
+    0x4042: "{parent} has no {child} with ID #{rid}",
 
     ## 405x: Method not allowed
     0x4050: "Method not allowed.",

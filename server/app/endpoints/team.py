@@ -18,7 +18,7 @@ from typing import List, Optional
 from flask import Blueprint, request, url_for
 
 from app import app, db
-from app.models import Team, Unit
+from app.models import Team, Unit, Company
 
 from app.helpers import (
     authenticate, Validator, HTTPResponse, Database
@@ -231,11 +231,25 @@ def put_single_team(team_id):
             if key not in [ 'name', 'unit_id' ]:
                 return HTTPResponse.error(0x4005, name=key)
 
-            # ensure unit_id exists
+            if key == 'name':
+                item: Optional[Team] = Team.query.filter_by(name=data['name'], unit_id=team.unit_id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=data['name'], parent='Unit')
+
             if key == 'unit_id':
-                unit: Optional[Unit] = Unit.query.filter_by(id=data[key]).first()
+                # retrieve the company we are currently in
+                unit: Optional[Unit] = Unit.query.filter_by(id=team.unit_id).first()
+                company: Optional[Company] = Company.query.filter_by(id=unit.company_id).first()
+
+                # lookup for this new unit within the same company
+                unit = Unit.query.filter_by(id=data['unit_id'], company_id=company.id).first()
                 if not unit:
-                    return HTTPResponse.error(0x4041, rid=data[key], table='Unit')
+                    return HTTPResponse.error(0x4042, parent='Company', child='Unit', rid=data['unit_id'])
+
+                # ensure item does not exist with this unit
+                item: Optional[Team] = Team.query.filter_by(name=team.name, unit_id=data['unit_id']).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=team.name, parent='Unit')
 
             setattr(team, key, data[key])
 
