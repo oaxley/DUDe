@@ -218,6 +218,11 @@ def put_single_company(company_id):
             if key not in [ 'name' ]:
                 return HTTPResponse.error(0x4005, name=key)
 
+            # check if name does not exist already
+            item: Optional[Company] = Company.query.filter_by(name=data['name']).first()
+            if item:
+                return HTTPResponse.error(0x4003, name=data['name'])
+
             setattr(company, key, data[key])
 
         db.session.add(company)
