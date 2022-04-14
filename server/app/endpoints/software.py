@@ -19,7 +19,7 @@ from uuid import uuid4
 from flask import Blueprint, request, url_for
 
 from app import app, db
-from app.models import Team, Software
+from app.models import Team, Software, Unit, Company
 
 from app.helpers import (
     authenticate, Validator, HTTPResponse, Database
@@ -234,11 +234,37 @@ def put_single_software(software_id):
             if key not in [ 'name', 'team_id' ]:
                 return HTTPResponse.error(0x4005, name=key)
 
-            # ensure team_id exists
+            # ensure name does not exist
+            if key == 'name':
+                item: Optional[Software] = Software.query.filter_by(name=data['name'], team_id=software.team_id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=data['name'], parent='Team')
+
+            # change of team within the same company
             if key == 'team_id':
-                team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
-                if not team:
+
+                # retrieve initial company for this software
+                u_team: Team = Team.query.filter_by(id=software.team_id).first()
+                u_unit: Unit = Unit.query.filter_by(id=u_team.unit_id).first()
+                u_company: Company = Company.query.filter_by(id=u_unit.company_id).first()
+
+                # check if the team exists
+                q_team: Optional[Team] = Team.query.filter_by(id=data[key]).first()
+                if not q_team:
                     return HTTPResponse.error(0x4041, rid=data[key], table='Team')
+
+                # retrieve the unit and the company for this team
+                q_unit: Unit = Unit.query.filter_by(id=q_team.unit_id).first()
+                q_company: Company = Company.query.filter_by(id=q_unit.company_id).first()
+
+                # check if both units are part of the same company
+                if q_company.id != u_company.id:
+                    return HTTPResponse.error(0x4000, key=key)
+
+                # ensure software does not already exist within this new team
+                item: Optional[Software] = Software.query.filter_by(name=software.name, team_id=q_team.id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, parent='Team', child='Software')
 
             setattr(software, key, data[key])
 
