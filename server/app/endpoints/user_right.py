@@ -246,11 +246,31 @@ def put_single_userright(user_right_id):
                 if not right:
                     return HTTPResponse.error(0x4041, rid=data[key], table='Right')
 
+                # ensure user/right are on the same team
+                user: User = User.query.filter_by(id=usrg.user_id).first()
+                if right.team_id != user.team_id:
+                    return HTTPResponse.error(0x4006)
+
+                # ensure the association does not exist already
+                item: Optional[UserRight] = UserRight.query.filter_by(right_id=right.id, user_id=user.id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, parent='UserRight', child='Association')
+
             # ensure user_id exists
             if key == 'user_id':
                 user: Optional[User] = User.query.filter_by(id=data[key]).first()
                 if not user:
                     return HTTPResponse.error(0x4041, rid=data[key], table='User')
+
+                # ensure user/right are on the same team
+                right: Right = Right.query.filter_by(id=usrg.right_id).first()
+                if user.team_id != right.team_id:
+                    return HTTPResponse.error(0x4006)
+
+                # ensure the association does not exist already
+                item: Optional[UserRight] = UserRight.query.filter_by(right_id=right.id, user_id=user.id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, parent='UserRight', child='Association')
 
             setattr(usrg, key, data[key])
 
