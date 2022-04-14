@@ -228,14 +228,14 @@ def put_single_unit(unit_id):
 
     try:
         for key in data:
-            if key not in [ 'name', 'company_id' ]:
+            if key not in [ 'name' ]:
                 return HTTPResponse.error(0x4005, name=key)
 
-            # ensure company_id exists
-            if key == 'company_id':
-                company: Optional[Company] = Company.query.filter_by(id=data[key]).first()
-                if not company:
-                    return HTTPResponse.error(0x4041, rid=data[key], table='Company')
+            # ensure name does not exists
+            if key == 'name':
+                item: Optional[Unit] = Unit.query.filter_by(name=data['name'], company_id=unit.company_id).first()
+                if item:
+                    return HTTPResponse.error(0x4002, child=data['name'], parent='Company')
 
             setattr(unit, key, data[key])
 
