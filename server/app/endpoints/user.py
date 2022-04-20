@@ -66,9 +66,9 @@ def post_user():
         return HTTPResponse.error(0x4041, rid=data['team_id'], table='Team')
 
     # check if the user exists already or not
-    user: Optional[User] = User.query.filter_by(name=data['name'], email=data['email'], team_id=team.id).first()
+    user: Optional[User] = User.query.filter_by(email=data['email']).first()
     if user:
-        return HTTPResponse.error(0x4002, child="User", parent="Team")
+        return HTTPResponse.error(0x4003, name="Email")
 
     try:
         user = User(name=data['name'], email=data['email'], team_id=team.id)
