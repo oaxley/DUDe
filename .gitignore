@@ -7,3 +7,7 @@
 # remove all the certificates except the Makefile
 certs/**
 !certs/Makefile
+
+# remove development files
+.python-version
+**/.envrc
