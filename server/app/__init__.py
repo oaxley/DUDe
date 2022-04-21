@@ -23,11 +23,15 @@ from .config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# define SQLAlchemy object
-db = SQLAlchemy(app)
-
 # import localized messages
 from app.localization import getMessage
+
+# ensure the DUDE_SECRET_KEY is defined
+if app.config['DUDE_SECRET_KEY'] is None:
+    app.logger.error(getMessage(0x0002))
+
+# define SQLAlchemy object
+db = SQLAlchemy(app)
 
 # print the api-key for administrative tasks
 if app.config['DEBUG'] == True:

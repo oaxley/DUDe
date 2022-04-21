@@ -21,6 +21,7 @@ from typing import Dict
 messages: Dict[int, str] = {
     # 0xxxh: Admin messages
     0x0001: "X-API-TOKEN for administrative endpoints is [{apikey}].",
+    0x0002: "DUDE_SECRET_KEY is not defined. Please fix this and restart.",
 
     # 1xxxh: HTTP 1xx messages
 
