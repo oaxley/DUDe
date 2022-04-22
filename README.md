@@ -104,6 +104,49 @@ After some time, you should have a directory with several files in it:
 In case you want a good primer on OpenSSL Certificate Authority, you can have a look [here](https://jamielinux.com/docs/openssl-certificate-authority/).
 
 
+>❗️ **IMPORTANT**  
+If you change the name of the certificate, you will have to update the gunicorn configuration in 'server/gunicorn.con.py'.  
+This is not ideal and I should probably use an environment variable for that.
+
+## Starting the server
+
+1. First thing first, you need to install the Python dependencies for this project.  
+
+``` bash
+$ pip install -r requirements.txt
+```
+
+2. Define environment variable DUDE_SECRET_KEY
+
+This variable is used by the server to protect administrative endpoints.  
+The value should be present in the HTTP header (X-API-Token) otherwise the action is refused.  
+A good way to create one, is to use *OpenSSL*:
+
+``` bash
+# generate a 20 char. hexadecimal string
+$ export DUDE_SECRET_KEY=$(openssl rand -hex 20)
+```
+
+Then you can run the server:
+
+``` bash
+$ cd server
+$ gunicorn
+```
+If the SSL certificates are available, they will be automatically loaded by gunicorn.
+
+## Testing the server
+
+You can test the server by using the '/version' endpoint and curl.
+
+``` bash
+$ curl --cacert certs/root/root_ca.cert.pem https://localhost:5000/version
+{
+  "version": "1.0.0"
+}
+```
+
+If you receive the version, that means the connection is working.
 
 
 ---
