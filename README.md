@@ -59,6 +59,53 @@ Right <|-- UserRight
 > This is the table that is queried by the micro-service and that associates a user with its rights.  
 > For example, John can read or write stories, but only Sarah is entitled to publish them.
 
+
+## A (tiny) bit of security
+
+We are in 2022, and unless you were living under a rock for the past 20 years, we will secure the communication with SSL.  
+A Makefile is present in the *certs* directory to help you create a root certificate and a server certificate.  
+And yes, it's a self signed certificate, which is bad, but it's sufficient for testing.
+
+1. Create the root certificate
+
+``` bash
+$ cd certs
+$ make server_cert
+```
+
+2. Create the server certificate
+
+By default the server certificate will be named '**my_dev_site.cert.pem**'.  
+You can override this value by setting the environment variable *SERVER_NAME* before calling make.
+
+``` bash
+# use the standard name 
+$ make server_cert
+
+# use a different name
+$ make SERVER_NAME=let_me_in server_cert
+```
+
+After some time, you should have a directory with several files in it:
+
+```
+.
+├── Makefile                        # that's our boy
+├── my_dev_site.cert.pem            # server certificate
+├── my_dev_site.key.pem             # server key
+└── root
+    ├── root_ca.cert.pem            # root certificate
+    ├── root_ca.cert.srl            # <- you can trash this one
+    └── root_ca.key.pem             # root key
+```
+
+⛔️ Don't forget that you must **NEVER** disclose your root key and certificate to anyone.
+
+In case you want a good primer on OpenSSL Certificate Authority, you can have a look [here](https://jamielinux.com/docs/openssl-certificate-authority/).
+
+
+
+
 ---
 
 ## License
