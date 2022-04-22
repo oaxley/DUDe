@@ -148,6 +148,29 @@ $ curl --cacert certs/root/root_ca.cert.pem https://localhost:5000/version
 
 If you receive the version, that means the connection is working.
 
+## API Endpoints
+
+The endpoints are described in a OpenAPI 3.0 document available [here](./docs/dude.openapi.yml).  
+You can import this file into [Postman](https://www.postman.com/) and it can create automatically a collection from it.
+
+### Validating rights
+
+1. Retrieve an authentication token
+
+To validate a user's right, you first need to retrieve an authentication token.  
+To do so, you query the **/auth** endpoint with the name and the api-key of the software that performs the check.  
+If both parameters are valid, the API will answer with a token.
+
+2. Validating user's right
+
+With the token, you can now validate the user's right by querying the **/validate** endpoint.
+
+## Libraries
+
+To integrate the DUDe to your application, there is a library in Python ([py-DUDe](https://github.com/oaxley/py-DUDe)).  
+I'm planning to do the same in Rust soon (rs-DUDe) when I will have some time.
+
+
 
 ---
 
