@@ -105,7 +105,7 @@ In case you want a good primer on OpenSSL Certificate Authority, you can have a 
 
 
 >❗️ **IMPORTANT**  
-If you change the name of the certificate, you will have to update the gunicorn configuration in 'server/gunicorn.con.py'.  
+If you change the name of the certificate, you will have to update the gunicorn configuration in 'server/gunicorn.conf.py'.  
 This is not ideal and I should probably use an environment variable for that.
 
 ## Starting the server
