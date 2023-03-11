@@ -1,5 +1,5 @@
 attrs==21.4.0
-certifi==2021.10.8
+certifi>=2022.12.07
 charset-normalizer==2.0.12
 click==8.1.2
 Flask==2.1.1
@@ -11,7 +11,7 @@ importlib-metadata==4.11.3
 itsdangerous==2.1.2
 Jinja2==3.1.1
 MarkupSafe==2.1.1
-PyJWT==2.3.0
+PyJWT>=2.4.0
 python-dotenv==0.20.0
 requests==2.27.1
 SQLAlchemy==1.4.35
