@@ -13,7 +13,7 @@ Jinja2==3.1.1
 MarkupSafe==2.1.1
 PyJWT>=2.4.0
 python-dotenv==0.20.0
-requests==2.27.1
+requests>=2.31
 SQLAlchemy==1.4.35
 urllib3==1.26.9
 Werkzeug>=2.2.3
