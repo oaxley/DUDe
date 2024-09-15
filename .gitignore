@@ -11,3 +11,5 @@ certs/**
 # remove development files
 .python-version
 **/.envrc
+
+**/venv
