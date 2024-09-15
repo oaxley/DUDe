@@ -112,8 +112,18 @@ This is not ideal and I should probably use an environment variable for that.
 
 1. First thing first, you need to install the Python dependencies for this project.  
 
+To ensure the installation does not messed up with your current Python installation, you can create a virtualenv:
+
 ``` bash
-$ pip install -r requirements.txt
+$ python3 -m venv --prompt DUDe venv
+```
+This create a new virtual environment in the venv directory.
+
+Activate the new environment and install the dependencies:
+
+``` bash
+$ source venv/bin/activate
+(DUDe) $ pip install -r requirements.txt
 ```
 
 2. Define environment variable DUDE_SECRET_KEY
