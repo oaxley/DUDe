@@ -16,6 +16,6 @@ PyJWT==2.9.0
 python-dotenv==0.20.0
 requests==2.32.3
 SQLAlchemy==1.4.35
-urllib3==2.2.3
+urllib3==2.6.0
 Werkzeug==3.0.6
 zipp==3.19.1
