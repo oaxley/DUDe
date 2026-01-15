@@ -17,5 +17,5 @@ python-dotenv==0.20.0
 requests==2.32.4
 SQLAlchemy==1.4.35
 urllib3==2.6.3
-Werkzeug==3.1.4
+Werkzeug==3.1.5
 zipp==3.19.1
